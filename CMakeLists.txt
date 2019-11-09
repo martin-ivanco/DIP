@@ -15,7 +15,8 @@ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17" )
 include_directories( ${OpenCV_INCLUDE_DIRS} ) 
 
 add_executable( auto360cam "src/main.cpp"
-"src/glimpses.cpp" )
+"src/glimpses.cpp"
+"src/videoinfo.cpp" )
 # "src/Arguments.cpp"
 # "src/AutocropStentiford.cpp"
 # "src/AutocropFang.cpp"

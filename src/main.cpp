@@ -4,7 +4,7 @@ using namespace std;
 
 int main(int argc, char **argv) {
     try {
-        Glimpses glimpses = Glimpses("../Playground/video.mp4");
+        Glimpses glimpses = Glimpses("../Playground/test.mp4");
     }
     catch (const invalid_argument& a) {
         cerr << "Invalid argument. The file doesn't exist or isn't an mp4." << endl;
