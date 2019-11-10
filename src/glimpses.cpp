@@ -117,7 +117,8 @@ tuple<cv::Mat, cv::Mat> Glimpses::getGnomonicDisplacementMaps(int phi, int lambd
     int w = GLIMPSE_WIDTH / 2;
     double phi1 = this->deg2rad(phi);
     double lam0 = this->deg2rad(lambda);
-    double R = 200.0; // TODO count according to fov and glimpse resolution
+    double aov = 65.5;
+    double R = w / tan(aov / 360 * CV_PI);
 
     for (int y = -h; y < h; y++) {
         for (int x = -w; x < w; x++) {
@@ -149,7 +150,8 @@ tuple<cv::Mat, cv::Mat> Glimpses::getStereographicDisplacementMaps(int phi, int 
     int w = GLIMPSE_WIDTH / 2;
     double phi1 = this->deg2rad(phi);
     double lam0 = this->deg2rad(lambda);
-    double R = 100.0; // TODO count according to fov and glimpse resolution
+    double aov = 104.3;
+    double R = w / tan(aov / 360 * CV_PI) / 2;
     double mSy = - 2 * R * tan(phi1);
     double mR = 2 * R / (cos(phi1) * sin(CV_PI / 2));
 
