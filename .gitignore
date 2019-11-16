@@ -2,4 +2,5 @@
 .vscode
 build
 deprecated
+external
 playground.py

@@ -24,6 +24,7 @@ private:
     VideoInfo originalVideo;
     string folderPath;
     vector<VideoInfo> splits;
+    vector<VideoInfo> glimpses;
 
     void generateGlimpses();
     void splitVideo();
@@ -37,6 +38,10 @@ private:
 
 public:
     Glimpses(string videoFilePath);
+    int length();
+    VideoInfo get(int index);
+
+    Glimpses(); // for development only
     
 };
 
