@@ -1,3 +1,4 @@
+#include "renderer.hpp"
 #include "glimpses.hpp"
 #include "saliency.hpp"
 #include "scorespace.hpp"
@@ -6,7 +7,8 @@ using namespace std;
 
 int main(int argc, char **argv) {
     try {
-        Glimpses glimpses = Glimpses(); // for development only
+        Renderer renderer = Renderer("../Playground/test.mp4");
+        Glimpses glimpses = Glimpses(renderer, DEVELOPMENT);
         Saliency saliency = Saliency(glimpses, S_ITTI);
         ScoreSpace space = saliency.getScoreSpace();
         vector<vector<int>> path = space.getShortestPath();

@@ -1,6 +1,10 @@
 #ifndef __CONSTANTS__
 #define __CONSTANTS__
 
+static const bool DEVELOPMENT = true;
+
+static const int SPLIT_LENGTH_SECONDS = 5;
+
 static const int PHIS_LENGTH = 11;
 static const int LAMBDAS_LENGTH = 18;
 

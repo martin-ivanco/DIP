@@ -12,9 +12,10 @@ include_directories( ${OpenCV_INCLUDE_DIRS} ${VLFEAT_INCLUDE_DIRS} )
 
 add_executable( auto360cam "src/main.cpp"
 "src/glimpses.cpp"
-"src/videoinfo.cpp"
+"src/renderer.cpp"
 "src/saliency.cpp"
 "src/scorespace.cpp"
+"src/videoinfo.cpp"
 "external/saliency/SalMapStentiford.cpp"
 "external/saliency/SalMapMargolin.cpp" 
 "external/saliency/SalMapItti.cpp" )
