@@ -3,6 +3,11 @@
 using namespace std;
 
 Saliency::Saliency(Glimpses glimpses, int saliencyType) : glimpses(glimpses), space(glimpses.splitCount()) {
+    if (SKIP_SALIENCY) {
+        this->space.loadFromFile();
+        return;
+    }
+
     if (saliencyType == S_ITTI)
         this->getSaliencyMap = this->getSaliencyMapItti;
     if (saliencyType == S_MARGOLIN)

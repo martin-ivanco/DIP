@@ -22,13 +22,14 @@ private:
     vector<vector<vector<Trace>>> accumulator;
 
     Trace findBestAncestor(int time, int phi, int lambda);
-    void saveToFile();
+    void saveToFile(); // for development only
 
 public:
     ScoreSpace(int splitCount);
     void set(int time, int phi, int lambda, double score);
-    vector<vector<int>> getShortestPath();
+    vector<tuple<int, int>> getBestPath();
     
+    void loadFromFile(); // for development only
 };
 
 #endif // __SCORESPACE__

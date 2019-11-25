@@ -96,6 +96,11 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
     return views;
 }
 
+VideoInfo Renderer::renderPath(vector<tuple<int, int>> path) {
+    // TODO
+    return VideoInfo("", 0, cv::Size(0, 0));
+}
+
 string Renderer::getSplitName(int timeBlock) {
     char buffer[100];
     sprintf (buffer, "%s_g%.4d.mp4", this->originalVideo.name.c_str(), timeBlock);

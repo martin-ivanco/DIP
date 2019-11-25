@@ -3,8 +3,8 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-Glimpses::Glimpses(Renderer renderer, bool rendered) : renderer(renderer) {
-    if (rendered) {
+Glimpses::Glimpses(Renderer renderer) : renderer(renderer) {
+    if (SKIP_GLIMPSES) {
         this->fillQuick();
         return;
     }

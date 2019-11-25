@@ -1,7 +1,8 @@
 #ifndef __CONSTANTS__
 #define __CONSTANTS__
 
-static const bool DEVELOPMENT = true;
+static const bool SKIP_GLIMPSES = true;
+static const bool SKIP_SALIENCY = true;
 
 static const int SPLIT_LENGTH_SECONDS = 5;
 

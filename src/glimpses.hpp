@@ -19,7 +19,7 @@ private:
     void fillQuick(); // for development only
 
 public:
-    Glimpses(Renderer renderer, bool rendered = false);
+    Glimpses(Renderer renderer);
     int length();
     VideoInfo get(int index);
     int splitCount();

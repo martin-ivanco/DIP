@@ -23,8 +23,8 @@ void ScoreSpace::set(int time, int phi, int lambda, double score) {
     this->space[time][phiIndex][lambdaIndex] = score;
 }
 
-vector<vector<int>> ScoreSpace::getShortestPath() {
-    vector<vector<int>> path(this->space.size(), vector<int>(2));
+vector<tuple<int, int>> ScoreSpace::getBestPath() {
+    vector<tuple<int, int>> path(this->space.size(), make_tuple(0, 0));
     
     for (int p = 0; p < PHIS_LENGTH; p++) {
         for (int l = 0; l < LAMBDAS_LENGTH; l++) {
@@ -45,8 +45,7 @@ vector<vector<int>> ScoreSpace::getShortestPath() {
     for (int p = 0; p < PHIS_LENGTH; p++) {
         for (int l = 0; l < LAMBDAS_LENGTH; l++) {
             if (bestEnd.score < this->accumulator[this->space.size() - 1][p][l].score) {
-                path[this->space.size() - 1][0] = p;
-                path[this->space.size() - 1][1] = l;
+                path[this->space.size() - 1] = make_tuple(p, l);
                 bestEnd = this->accumulator[this->space.size() - 1][p][l];
             }
         }
@@ -54,8 +53,7 @@ vector<vector<int>> ScoreSpace::getShortestPath() {
 
     Trace pTrace = bestEnd;
     for (int t = this->space.size() - 2; t >= 0; t--) {
-        path[t][0] = pTrace.phi;
-        path[t][1] = pTrace.lambda;
+        path[t]= make_tuple(pTrace.phi, pTrace.lambda);
         pTrace = this->accumulator[t][pTrace.phi][pTrace.lambda];
     }
 
@@ -79,8 +77,9 @@ Trace ScoreSpace::findBestAncestor(int time, int phi, int lambda) {
     return t;
 }
 
+// for development only
 void ScoreSpace::saveToFile() {
-    ofstream file1("../Playground/space.txt");
+    ofstream file1("../Playground/space1.txt");
     for (int s = 0; s < this->space.size(); s++) {
         for (int p = 0; p < PHIS_LENGTH; p++) {
             for (int l = 0; l < LAMBDAS_LENGTH; l++) {
@@ -99,5 +98,21 @@ void ScoreSpace::saveToFile() {
             file2 << "\n";
         }
         file2 << "\n\n\n";
+    }
+}
+
+// for development only
+void ScoreSpace::loadFromFile() {
+    ifstream file1("../Playground/space.txt");
+    if (! file1.is_open())
+        throw runtime_error("Could not open score space file.");
+
+    char temp;
+    for (int s = 0; s < this->space.size(); s++) {
+        for (int p = 0; p < PHIS_LENGTH; p++) {
+            for (int l = 0; l < LAMBDAS_LENGTH; l++) {
+                file1 >> this->space[s][p][l];
+            }
+        }
     }
 }

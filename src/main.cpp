@@ -8,12 +8,14 @@ using namespace std;
 int main(int argc, char **argv) {
     try {
         Renderer renderer = Renderer("../Playground/test.mp4");
-        Glimpses glimpses = Glimpses(renderer, DEVELOPMENT);
+        Glimpses glimpses = Glimpses(renderer);
         Saliency saliency = Saliency(glimpses, S_ITTI);
         ScoreSpace space = saliency.getScoreSpace();
-        vector<vector<int>> path = space.getShortestPath();
+        vector<tuple<int, int>> path = space.getBestPath();
+        int p, l;
         for (auto i: path)
-            cerr << i[0] << " " << i[1] << endl;
+            cerr << get<0>(i) << " " << get<1>(i) << endl;
+        // renderer.renderPath(space.getBestPath());
     }
     catch (const invalid_argument& a) {
         cerr << "Invalid argument. The file doesn't exist or isn't an mp4." << endl;

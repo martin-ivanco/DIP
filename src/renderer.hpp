@@ -31,6 +31,7 @@ public:
     Renderer(string videoFilePath);
     vector<VideoInfo> splitVideo(int splitLength);
     vector<VideoInfo> composeViews(int phi, int lambda, vector<VideoInfo> videos);
+    VideoInfo renderPath(vector<tuple<int, int>> path);
     
     VideoInfo getVideoInfo(); // for development only
 };
