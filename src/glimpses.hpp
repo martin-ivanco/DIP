@@ -10,13 +10,9 @@
 #include <opencv2/videoio.hpp>
 
 #include "videoinfo.hpp"
+#include "constants.hpp"
 
 using namespace std;
-
-static const int PHIS[11] = {-75,-45,-30, -20, -10, 0, 10, 20, 30, 45, 75};
-static const int LAMBDAS[18] = {-180, -160, -140, -120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120, 140, 160};
-static const int GLIMPSE_WIDTH = 640;
-static const int GLIMPSE_HEIGHT = 360;
 
 class Glimpses {
 
@@ -40,6 +36,7 @@ public:
     Glimpses(string videoFilePath);
     int length();
     VideoInfo get(int index);
+    int splitCount();
 
     Glimpses(); // for development only
     

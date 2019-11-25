@@ -26,7 +26,7 @@ VideoInfo::VideoInfo(string path) {
         video.release();
 }
 
-VideoInfo::VideoInfo(string path, int fps, cv::Size size) {
+VideoInfo::VideoInfo(string path, int fps, cv::Size size, int split, int phi, int lambda) {
     this->path = path;
     fs::path p = fs::path(this->path);
     this->folder = p.parent_path();
@@ -36,4 +36,7 @@ VideoInfo::VideoInfo(string path, int fps, cv::Size size) {
     this->width = size.width;
     this->height = size.height;
     this->size = size;
+    this->split = split;
+    this->phi = phi;
+    this->lambda = lambda;
 }

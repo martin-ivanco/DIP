@@ -20,6 +20,10 @@ VideoInfo Glimpses::get(int index) {
     return this->glimpses.at(index);
 }
 
+int Glimpses::splitCount() {
+    return this->splits.size();
+}
+
 void Glimpses::generateGlimpses() {
     this->splitVideo();
     
@@ -68,44 +72,44 @@ void Glimpses::splitVideo() {
 }
 
 void Glimpses::composeView(int phi, int lambda) {
-    // auto [mapLam, mapPhi] = this->getStereographicDisplacementMaps(phi, lambda);
-    // cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
-    // cv::Mat map2 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16UC1);
-    // cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
+    auto [mapLam, mapPhi] = this->getStereographicDisplacementMaps(phi, lambda);
+    cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
+    cv::Mat map2 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16UC1);
+    cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
 
-    // cv::VideoCapture clip;
-    // cv::Mat frame;
-    // cv::VideoWriter writer;
-    // cv::Mat warped;
-    // int fourcc = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
+    cv::VideoCapture clip;
+    cv::Mat frame;
+    cv::VideoWriter writer;
+    cv::Mat warped;
+    int fourcc = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
 
     for (int i = 0; i < this->splits.size(); i++) {
-        // clip.open(splits[i].path);
-        // if (! clip.isOpened())
-        //     throw runtime_error("Could not open split!");
+        clip.open(this->splits[i].path);
+        if (! clip.isOpened())
+            throw runtime_error("Could not open split!");
         
         string glimpsePath = fs::path(this->folderPath) / this->getGlimpseName(i, phi, lambda);
-        VideoInfo glimpse = VideoInfo(glimpsePath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT));
+        VideoInfo glimpse = VideoInfo(glimpsePath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT), i, phi, lambda);
 
-        // writer.open(glimpsePath, fourcc, glimpse.fps, glimpse.size);
-        // if (! writer.isOpened())
-        //     throw runtime_error("Could not write video!");
+        writer.open(glimpsePath, fourcc, glimpse.fps, glimpse.size);
+        if (! writer.isOpened())
+            throw runtime_error("Could not write video!");
 
-        // while (true) {
-        //     clip.read(frame);
-        //     if (frame.empty())
-        //         break;
-        //     cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
-        //     writer.write(warped);
-        // }
+        while (true) {
+            clip.read(frame);
+            if (frame.empty())
+                break;
+            cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
+            writer.write(warped);
+        }
 
         this->glimpses.push_back(glimpse);
     }
 
-    // if (writer.isOpened())
-    //     writer.release();
-    // if (clip.isOpened())
-    //     clip.release();
+    if (writer.isOpened())
+        writer.release();
+    if (clip.isOpened())
+        clip.release();
 }
 
 string Glimpses::getSplitName(int timeBlock) {
@@ -222,7 +226,7 @@ Glimpses::Glimpses() : originalVideo("../Playground/test.mp4") {
         for (auto l : LAMBDAS) {
             for (int i = 0; i < this->splits.size(); i++) { 
                 string glimpsePath = fs::path(this->folderPath) / this->getGlimpseName(i, p, l);
-                VideoInfo glimpse = VideoInfo(glimpsePath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT));
+                VideoInfo glimpse = VideoInfo(glimpsePath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT), i, p, l);
                 this->glimpses.push_back(glimpse);
             }
         }

@@ -5,24 +5,32 @@
 #include <string>
 
 #include "glimpses.hpp"
+#include "constants.hpp"
+#include "scorespace.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
 #include "../external/saliency/SalMapStentiford.h"
 
 using namespace std;
 
-static const int S_ITTI = 0;
-static const int S_MARGOLIN = 1;
-static const int S_STENTIFORD = 2;
-
 class Saliency {
 
 private:
     Glimpses glimpses;
+    cv::Mat (* getSaliencyMap)(cv::Mat);
+    ScoreSpace space;
+
+    double getGlimpseScoreQuick(VideoInfo glimpse);  // for development only
+    double getGlimpseScore(VideoInfo glimpse);
+    double getFrameScore(cv::Mat frame);
+
+    static cv::Mat getSaliencyMapItti(cv::Mat frame);
+    static cv::Mat getSaliencyMapMargolin(cv::Mat frame);
+    static cv::Mat getSaliencyMapStentiford(cv::Mat frame);
 
 public:
-    Saliency(Glimpses glimpses);
-    void getScoreSpace(int saliencyType);
+    Saliency(Glimpses glimpses, int saliencyType);
+    ScoreSpace getScoreSpace();
 
 };
 
