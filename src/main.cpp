@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
         int p, l;
         for (auto i: path)
             cerr << get<0>(i) << " " << get<1>(i) << endl;
-        // renderer.renderPath(space.getBestPath());
+        renderer.renderPath(space.getBestPath());
     }
     catch (const invalid_argument& a) {
         cerr << "Invalid argument. The file doesn't exist or isn't an mp4." << endl;

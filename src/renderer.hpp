@@ -23,7 +23,7 @@ private:
     string getSplitName(int timeBlock);
     string getViewName(int timeBlock, int longitude, int latitude);
     tuple<cv::Mat, cv::Mat> getGnomonicDisplacementMaps(int phi, int lambda);
-    tuple<cv::Mat, cv::Mat> getStereographicDisplacementMaps(int phi, int lambda);
+    tuple<cv::Mat, cv::Mat> getStereographicDisplacementMaps(double phi, double lambda);
     double deg2rad(double deg);
     tuple<double, double> rad2erp(double phi, double lambda);
 
