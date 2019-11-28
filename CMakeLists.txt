@@ -16,6 +16,7 @@ add_executable( auto360cam "src/main.cpp"
 "src/saliency.cpp"
 "src/scorespace.cpp"
 "src/videoinfo.cpp"
+"src/tools.cpp"
 "external/saliency/SalMapStentiford.cpp"
 "external/saliency/SalMapMargolin.cpp" 
 "external/saliency/SalMapItti.cpp" )

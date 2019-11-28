@@ -26,6 +26,9 @@ private:
     tuple<cv::Mat, cv::Mat> getStereographicDisplacementMaps(double phi, double lambda);
     double deg2rad(double deg);
     tuple<double, double> rad2erp(double phi, double lambda);
+    void open(cv::VideoCapture &capture, string filename);
+    void open(cv::VideoWriter &writer, string filename, int fps, cv::Size size);
+    void close(cv::VideoCapture &capture, cv::VideoWriter &writer);
 
 public:
     Renderer(string videoFilePath);

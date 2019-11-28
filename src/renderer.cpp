@@ -13,23 +13,17 @@ Renderer::Renderer(string videoFilePath) : originalVideo(videoFilePath) {
 vector<VideoInfo> Renderer::splitVideo(int splitLength) {
     vector<VideoInfo> splits;
 
-    cv::VideoCapture video = cv::VideoCapture(this->originalVideo.path);
-    if (! video.isOpened())
-        throw runtime_error("Could not open input video!");
+    cv::VideoCapture video;
+    this->open(video, this->originalVideo.path);
     cv::Mat frame;
 
     cv::VideoWriter writer;
-    int fourcc = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
-
     bool finished = false;
     while (! finished)
     {
         string splitPath = fs::path(this->folderPath) / this->getSplitName(splits.size());
         VideoInfo split = VideoInfo(splitPath, static_cast<double>(this->originalVideo.fps), this->originalVideo.size);
-        
-        writer.open(splitPath, fourcc, split.fps, split.size);
-        if (! writer.isOpened())
-            throw runtime_error("Could not write video!");
+        this->open(writer, splitPath, split.fps, split.size);
 
         for (int i = 0; i < this->originalVideo.fps * splitLength; i++) {
             video.read(frame);
@@ -43,11 +37,7 @@ vector<VideoInfo> Renderer::splitVideo(int splitLength) {
         splits.push_back(split);
     }
 
-    if (writer.isOpened())
-        writer.release();
-    if (video.isOpened())
-        video.release();
-
+    this->close(video, writer);
     return splits;
 }
 
@@ -63,19 +53,13 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
     cv::Mat frame;
     cv::VideoWriter writer;
     cv::Mat warped;
-    int fourcc = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
 
     for (int i = 0; i < videos.size(); i++) {
-        clip.open(videos[i].path);
-        if (! clip.isOpened())
-            throw runtime_error("Could not open split!");
+        this->open(clip, videos[i].path);
         
         string viewPath = fs::path(this->folderPath) / this->getViewName(i, phi, lambda);
         VideoInfo view = VideoInfo(viewPath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT), i, phi, lambda);
-
-        writer.open(viewPath, fourcc, view.fps, view.size);
-        if (! writer.isOpened())
-            throw runtime_error("Could not write video!");
+        this->open(writer, viewPath, view.fps, view.size);
 
         while (true) {
             clip.read(frame);
@@ -88,27 +72,18 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
         views.push_back(view);
     }
 
-    if (writer.isOpened())
-        writer.release();
-    if (clip.isOpened())
-        clip.release();
-
+    this->close(clip, writer);
     return views;
 }
 
 VideoInfo Renderer::renderPath(vector<tuple<int, int>> path) {
     cv::VideoCapture video;
-    video.open(this->originalVideo.path);
-    if (! video.isOpened())
-        throw runtime_error("Could not open input video!");
+    this->open(video, this->originalVideo.path);
     
     cv::VideoWriter writer;
     string outputPath = fs::path(this->folderPath) / "output.mp4";
     VideoInfo output = VideoInfo(outputPath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT));
-    int fourcc = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
-    writer.open(outputPath, fourcc, output.fps, output.size);
-    if (! writer.isOpened())
-        throw runtime_error("Could not write video!");
+    this->open(writer, outputPath, output.fps, output.size);
 
     auto [mapLam, mapPhi] = this->getStereographicDisplacementMaps(PHIS[get<0>(path[0])], LAMBDAS[get<1>(path[0])]);
     cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
@@ -158,11 +133,7 @@ VideoInfo Renderer::renderPath(vector<tuple<int, int>> path) {
         writer.write(warped);
     }
     
-    if (writer.isOpened())
-        writer.release();
-    if (video.isOpened())
-        video.release();
-
+    this->close(video, writer);
     return output;
 }
 
@@ -263,6 +234,25 @@ tuple<double, double> Renderer::rad2erp(double phi, double lambda) {
     lambda = fmod(lambda + CV_PI, 2 * CV_PI);
     lambda = lambda < 0 ? lambda + 2 * CV_PI : lambda;
     return {phi / CV_PI * this->originalVideo.height, lambda / (2 * CV_PI) * this->originalVideo.width};
+}
+
+void Renderer::open(cv::VideoCapture &capture, string filename) {
+    capture.open(filename);
+    if (! capture.isOpened())
+        throw runtime_error("Could not open input video!");
+}
+
+void Renderer::open(cv::VideoWriter &writer, string filename, int fps, cv::Size size) {
+    writer.open(filename, FOURCC_DEFAULT, fps, size);
+    if (! writer.isOpened())
+        throw runtime_error("Could not write video!");
+}
+
+void Renderer::close(cv::VideoCapture &capture, cv::VideoWriter &writer) {
+    if (writer.isOpened())
+        writer.release();
+    if (capture.isOpened())
+        capture.release();
 }
 
 // for development only

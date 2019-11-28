@@ -1,6 +1,9 @@
 #ifndef __CONSTANTS__
 #define __CONSTANTS__
 
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+
 static const int L_DEBUG = 0;
 static const int L_WARNING = 1;
 static const int L_ERROR = 2;
@@ -11,6 +14,7 @@ static const bool SKIP_GLIMPSES = true;
 static const bool SKIP_SALIENCY = true;
 
 static const int SPLIT_LENGTH_SECONDS = 5;
+static const int FOURCC_DEFAULT = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
 
 static const int PHIS_LENGTH = 11;
 static const int LAMBDAS_LENGTH = 18;
