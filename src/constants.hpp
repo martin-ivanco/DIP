@@ -1,6 +1,12 @@
 #ifndef __CONSTANTS__
 #define __CONSTANTS__
 
+static const int L_DEBUG = 0;
+static const int L_WARNING = 1;
+static const int L_ERROR = 2;
+static const int L_OUTPUT = 3;
+static const int PRINT_LEVEL = L_DEBUG;
+
 static const bool SKIP_GLIMPSES = true;
 static const bool SKIP_SALIENCY = true;
 

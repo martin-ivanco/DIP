@@ -2,6 +2,7 @@
 #include "glimpses.hpp"
 #include "saliency.hpp"
 #include "scorespace.hpp"
+#include "tools.hpp"
 
 using namespace std;
 
@@ -12,9 +13,8 @@ int main(int argc, char **argv) {
         Saliency saliency = Saliency(glimpses, S_ITTI);
         ScoreSpace space = saliency.getScoreSpace();
         vector<tuple<int, int>> path = space.getBestPath();
-        int p, l;
         for (auto i: path)
-            cerr << get<0>(i) << " " << get<1>(i) << endl;
+            Tools::print(to_string(get<0>(i)) + " " + to_string(get<0>(i)) + "\n", L_DEBUG);
         renderer.renderPath(space.getBestPath());
     }
     catch (const invalid_argument& a) {

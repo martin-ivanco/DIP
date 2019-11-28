@@ -18,7 +18,7 @@ Saliency::Saliency(Glimpses glimpses, int saliencyType) : glimpses(glimpses), sp
     VideoInfo g = VideoInfo("", 0, cv::Size(0, 0));
     for (int i = 0; i < glimpses.length(); i++) {
         g = this->glimpses.get(i);
-        cerr << "Evaluating score of glimpse " << i + 1 << " out of " << glimpses.length() << ": " << endl;
+        Tools::print("Evaluating glimpse " + to_string(i + 1) + " of " + to_string(glimpses.length()) + "\n", L_DEBUG);
         // this->space.set(g.split, g.phi, g.lambda, this->getGlimpseScore(g));
         this->space.set(g.split, g.phi, g.lambda, this->getGlimpseScoreQuick(g)); // for development only 
     }
@@ -38,7 +38,7 @@ double Saliency::getGlimpseScore(VideoInfo glimpse) {
     cv::Mat frame;
     while (true) {
         if (counter % glimpse.fps == 0)
-            cerr << "=";
+            Tools::print("=", L_DEBUG);
         video.read(frame);
         if (frame.empty())
             break;
@@ -46,7 +46,7 @@ double Saliency::getGlimpseScore(VideoInfo glimpse) {
         scoreSum += this->getFrameScore(frame);
     }
 
-    cerr << endl << "Score: " << (counter != 0 ? scoreSum / counter : 0) << endl;
+    Tools::print("\nScore: " + to_string(counter != 0 ? scoreSum / counter : 0) + "\n", L_DEBUG);
     return counter != 0 ? scoreSum / counter : 0;
 }
 

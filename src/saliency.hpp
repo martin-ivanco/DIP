@@ -7,6 +7,7 @@
 #include "glimpses.hpp"
 #include "constants.hpp"
 #include "scorespace.hpp"
+#include "tools.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
 #include "../external/saliency/SalMapStentiford.h"
