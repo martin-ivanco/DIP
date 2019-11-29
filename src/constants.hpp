@@ -11,7 +11,7 @@ static const int L_OUTPUT = 3;
 static const int PRINT_LEVEL = L_DEBUG;
 
 static const bool SKIP_GLIMPSES = true;
-static const bool SKIP_SALIENCY = true;
+static const bool SKIP_SALIENCY = false;
 
 static const int SPLIT_LENGTH_SECONDS = 5;
 static const int FOURCC_DEFAULT = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
