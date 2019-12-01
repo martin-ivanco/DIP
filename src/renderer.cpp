@@ -76,7 +76,7 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
     return views;
 }
 
-VideoInfo Renderer::renderPath(vector<tuple<int, int>> path) {
+VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> path) {
     cv::VideoCapture video;
     this->open(video, this->originalVideo.path);
     
@@ -137,6 +137,35 @@ VideoInfo Renderer::renderPath(vector<tuple<int, int>> path) {
     return output;
 }
 
+VideoInfo Renderer::renderPath(vector<tuple<double, double, double>> path) {
+    cv::VideoCapture video;
+    this->open(video, this->originalVideo.path);
+    
+    cv::VideoWriter writer;
+    string outputPath = fs::path(this->folderPath) / "output.mp4";
+    VideoInfo output = VideoInfo(outputPath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT));
+    this->open(writer, outputPath, output.fps, output.size);
+
+    cv::Mat frame;
+    cv::Mat warped;
+    cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
+    cv::Mat map2 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16UC1);
+
+    for (int i = 0; i < path.size(); i++) {
+        auto [mapLam, mapPhi] = this->getStereographicDisplacementMaps(get<0>(path[0]), get<1>(path[0]), get<2>(path[0]));
+        cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
+
+        video.read(frame);
+        if (frame.empty())
+            throw runtime_error("Video shorter than expected.");
+        cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
+        writer.write(warped);
+    }
+    
+    this->close(video, writer);
+    return output;
+}
+
 string Renderer::getSplitName(int timeBlock) {
     char buffer[100];
     sprintf (buffer, "%s_g%.4d.mp4", this->originalVideo.name.c_str(), timeBlock);
@@ -182,14 +211,13 @@ tuple<cv::Mat, cv::Mat> Renderer::getGnomonicDisplacementMaps(int phi, int lambd
     return {mapLam, mapPhi};
 }
 
-tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(double phi, double lambda) {
+tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(double phi, double lambda, double aov) {
     cv::Mat mapLam = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_32FC1);
     cv::Mat mapPhi = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_32FC1);
     int h = GLIMPSE_HEIGHT / 2;
     int w = GLIMPSE_WIDTH / 2;
     double phi1 = this->deg2rad(phi);
     double lam0 = this->deg2rad(lambda);
-    double aov = 104.3;
     double R = w / tan(aov / 360 * CV_PI) / 2;
     double mSy = - 2 * R * tan(phi1);
     double mR = 2 * R / (cos(phi1) * sin(CV_PI / 2));

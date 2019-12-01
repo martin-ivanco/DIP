@@ -23,7 +23,7 @@ private:
     string getSplitName(int timeBlock);
     string getViewName(int timeBlock, int longitude, int latitude);
     tuple<cv::Mat, cv::Mat> getGnomonicDisplacementMaps(int phi, int lambda);
-    tuple<cv::Mat, cv::Mat> getStereographicDisplacementMaps(double phi, double lambda);
+    tuple<cv::Mat, cv::Mat> getStereographicDisplacementMaps(double phi, double lambda, double aov = 104.3);
     double deg2rad(double deg);
     tuple<double, double> rad2erp(double phi, double lambda);
     void open(cv::VideoCapture &capture, string filename);
@@ -34,7 +34,8 @@ public:
     Renderer(string videoFilePath);
     vector<VideoInfo> splitVideo(int splitLength);
     vector<VideoInfo> composeViews(int phi, int lambda, vector<VideoInfo> videos);
-    VideoInfo renderPath(vector<tuple<int, int>> path);
+    VideoInfo renderSplitPath(vector<tuple<int, int>> path);
+    VideoInfo renderPath(vector<tuple<double, double, double>> path);
     
     VideoInfo getVideoInfo(); // for development only
 };
