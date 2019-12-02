@@ -43,12 +43,7 @@ vector<VideoInfo> Renderer::splitVideo(int splitLength) {
 
 vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> videos) {
     vector<VideoInfo> views;
-
-    auto [mapLam, mapPhi] = this->getStereographicDisplacementMaps(phi, lambda);
-    cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
-    cv::Mat map2 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16UC1);
-    cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
-
+    auto [map1, map2] = this->getStereographicDisplacementMaps(phi, lambda);
     cv::VideoCapture clip;
     cv::Mat frame;
     cv::VideoWriter writer;
@@ -62,11 +57,8 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
         this->open(writer, viewPath, view.fps, view.size);
 
         while (true) {
-            clip.read(frame);
-            if (frame.empty())
+            if (! this->remapFrame(clip, writer, map1, map2, frame, warped))
                 break;
-            cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
-            writer.write(warped);
         }
 
         views.push_back(view);
@@ -85,19 +77,13 @@ VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> path) {
     VideoInfo output = VideoInfo(outputPath, static_cast<double>(this->originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT));
     this->open(writer, outputPath, output.fps, output.size);
 
-    auto [mapLam, mapPhi] = this->getStereographicDisplacementMaps(PHIS[get<0>(path[0])], LAMBDAS[get<1>(path[0])]);
-    cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
-    cv::Mat map2 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16UC1);
-    cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
-
+    auto [map1, map2] = this->getStereographicDisplacementMaps(PHIS[get<0>(path[0])], LAMBDAS[get<1>(path[0])]);
     cv::Mat frame;
     cv::Mat warped;
+    
     for (int i = 0; i < (SPLIT_LENGTH_SECONDS / 2.0) * originalVideo.fps; i++) {
-        video.read(frame);
-        if (frame.empty())
+        if (! this->remapFrame(video, writer, map1, map2, frame, warped))
             throw runtime_error("Video shorter than expected.");
-        cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
-        writer.write(warped);
     }
 
     for (int s = 1; s < path.size(); s++) {
@@ -110,27 +96,19 @@ VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> path) {
         for (int i = 0; i < SPLIT_LENGTH_SECONDS * originalVideo.fps; i++) {
             if ((diffPhi != 0) || (diffLambda != 0)) {
                 progress = static_cast<double>(i) / (SPLIT_LENGTH_SECONDS * originalVideo.fps);
-                tie(mapLam, mapPhi) = this->getStereographicDisplacementMaps(progress * diffPhi + startPhi, progress * diffLambda + startLambda);
-                cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
+                tie(map1, map2) = this->getStereographicDisplacementMaps(progress * diffPhi + startPhi, progress * diffLambda + startLambda);
             }
 
-            video.read(frame);
-            if (frame.empty())
+            if (! this->remapFrame(video, writer, map1, map2, frame, warped))
                 throw runtime_error("Video shorter than expected.");
-            cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
-            writer.write(warped);
         }
     }
 
-    tie(mapLam, mapPhi) = this->getStereographicDisplacementMaps(PHIS[get<0>(path[path.size() - 1])], LAMBDAS[get<1>(path[path.size() - 1])]);
-    cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
+    tie(map1, map2) = this->getStereographicDisplacementMaps(PHIS[get<0>(path[path.size() - 1])], LAMBDAS[get<1>(path[path.size() - 1])]);
 
     while (true) {
-        video.read(frame);
-        if (frame.empty())
+        if (! this->remapFrame(video, writer, map1, map2, frame, warped))
             break;
-        cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
-        writer.write(warped);
     }
     
     this->close(video, writer);
@@ -148,18 +126,10 @@ VideoInfo Renderer::renderPath(vector<tuple<double, double, double>> path) {
 
     cv::Mat frame;
     cv::Mat warped;
-    cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
-    cv::Mat map2 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16UC1);
-
     for (int i = 0; i < path.size(); i++) {
-        auto [mapLam, mapPhi] = this->getStereographicDisplacementMaps(get<0>(path[0]), get<1>(path[0]), get<2>(path[0]));
-        cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
-
-        video.read(frame);
-        if (frame.empty())
+        auto [map1, map2] = this->getStereographicDisplacementMaps(get<0>(path[0]), get<1>(path[0]), get<2>(path[0]));
+        if (! this->remapFrame(video, writer, map1, map2, frame, warped))
             throw runtime_error("Video shorter than expected.");
-        cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
-        writer.write(warped);
     }
     
     this->close(video, writer);
@@ -176,39 +146,6 @@ string Renderer::getViewName(int timeBlock, int phi, int lambda) {
     char buffer[100];
     sprintf (buffer, "%s_g%.4d_h%.3d_v%.3d.mp4", this->originalVideo.name.c_str(), timeBlock, lambda, phi);
     return string(buffer);
-}
-
-tuple<cv::Mat, cv::Mat> Renderer::getGnomonicDisplacementMaps(int phi, int lambda) {
-    cv::Mat mapLam = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_32FC1);
-    cv::Mat mapPhi = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_32FC1);
-    int h = GLIMPSE_HEIGHT / 2;
-    int w = GLIMPSE_WIDTH / 2;
-    double phi1 = this->deg2rad(phi);
-    double lam0 = this->deg2rad(lambda);
-    double aov = 65.5;
-    double R = w / tan(aov / 360 * CV_PI);
-
-    for (int y = -h; y < h; y++) {
-        for (int x = -w; x < w; x++) {
-            double ro = sqrt(x * x + y * y);
-            double c = atan(ro / R);
-
-            double rPhi = asin(cos(c) * sin(phi1) + (y * sin(c) * cos(phi1) / ro));
-            double rLam;
-            if (phi == 90)
-                rLam = lam0 + atan(static_cast<double>(x) / (-y));
-            else if (phi == -90)
-                rLam = lam0 + atan(static_cast<double>(x) / y);
-            else
-                rLam = lam0 + atan(x * sin(c) / (ro * cos(phi1) * cos(c) - y * sin(phi1) * sin(c)));
-
-            auto [erpY, erpX] = this->rad2erp(rPhi, rLam);
-            mapPhi.at<float>(y + h, x + w) = static_cast<float>(erpY);
-            mapLam.at<float>(y + h, x + w) = static_cast<float>(erpX);
-        }
-    }
-    
-    return {mapLam, mapPhi};
 }
 
 tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(double phi, double lambda, double aov) {
@@ -250,7 +187,10 @@ tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(double phi, d
         }
     }
 
-    return {mapLam, mapPhi};
+    cv::Mat map1 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16SC2);
+    cv::Mat map2 = cv::Mat(GLIMPSE_HEIGHT, GLIMPSE_WIDTH, CV_16UC1);
+    cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
+    return {map1, map2};
 }
 
 double Renderer::deg2rad(double deg) {
@@ -262,6 +202,15 @@ tuple<double, double> Renderer::rad2erp(double phi, double lambda) {
     lambda = fmod(lambda + CV_PI, 2 * CV_PI);
     lambda = lambda < 0 ? lambda + 2 * CV_PI : lambda;
     return {phi / CV_PI * this->originalVideo.height, lambda / (2 * CV_PI) * this->originalVideo.width};
+}
+
+bool Renderer::remapFrame(cv::VideoCapture &capture, cv::VideoWriter &writer, cv::Mat &map1, cv::Mat &map2, cv::Mat &frame, cv::Mat &warped) {
+    capture.read(frame);
+    if (frame.empty())
+        return false;
+    cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
+    writer.write(warped);
+    return true;
 }
 
 void Renderer::open(cv::VideoCapture &capture, string filename) {

@@ -22,10 +22,10 @@ private:
 
     string getSplitName(int timeBlock);
     string getViewName(int timeBlock, int longitude, int latitude);
-    tuple<cv::Mat, cv::Mat> getGnomonicDisplacementMaps(int phi, int lambda);
     tuple<cv::Mat, cv::Mat> getStereographicDisplacementMaps(double phi, double lambda, double aov = 104.3);
     double deg2rad(double deg);
     tuple<double, double> rad2erp(double phi, double lambda);
+    bool remapFrame(cv::VideoCapture &capture, cv::VideoWriter &writer, cv::Mat &map1, cv::Mat &map2, cv::Mat &frame, cv::Mat &warped);
     void open(cv::VideoCapture &capture, string filename);
     void open(cv::VideoWriter &writer, string filename, int fps, cv::Size size);
     void close(cv::VideoCapture &capture, cv::VideoWriter &writer);
