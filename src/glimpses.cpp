@@ -28,6 +28,10 @@ VideoInfo Glimpses::get(int index) {
     return this->glimpses.at(index);
 }
 
+VideoInfo Glimpses::getOriginalVideo() {
+    return this->renderer.getVideoInfo();
+}
+
 int Glimpses::splitCount() {
     return this->splits.size();
 }

@@ -4,9 +4,8 @@ using namespace std;
 namespace fs = std::filesystem;
 
 Renderer::Renderer(string videoFilePath) : originalVideo(videoFilePath) {
-    fs::path p = fs::path(this->originalVideo.folder);
-    this->folderPath = p / this->originalVideo.name;
-    if ((! fs::exists(this->folderPath)) && (! fs::create_directory(this->folderPath)))
+    this->folderPath = fs::path("data/glimpses") / this->originalVideo.name;
+    if ((! fs::exists(this->folderPath)) && (! fs::create_directories(this->folderPath)))
         throw runtime_error("Could not create directory!");
 }
 

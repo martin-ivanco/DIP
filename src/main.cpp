@@ -1,20 +1,29 @@
+#include <iostream>
+#include <string>
+
 #include "autocrop.hpp"
 #include "renderer.hpp"
 #include "glimpses.hpp"
 #include "saliency.hpp"
 #include "scorespace.hpp"
 #include "tools.hpp"
+#include "c3d.hpp"
 
 using namespace std;
+namespace fs = std::filesystem;
+
+static const string INPUT_PATH = "data/input";
 
 int main(int argc, char **argv) {
+    // TODO CHECK INPUT PATH N STUFF
     try {
-        Renderer renderer = Renderer("../Playground/test.mp4");
-        cerr << "Creating autocrop." << endl;
-        AutoCrop autocrop = AutoCrop("../Playground/test.mp4", S_ITTI);
-        cerr << "Rendering video." << endl;
-        renderer.renderPath(autocrop.getPath());
-        // Glimpses glimpses = Glimpses(renderer);
+        Renderer renderer = Renderer("data/input/test.mp4");
+        // cerr << "Creating autocrop." << endl;
+        // AutoCrop autocrop = AutoCrop("../Playground/test.mp4", S_ITTI);
+        // cerr << "Rendering video." << endl;
+        // renderer.renderPath(autocrop.getPath());
+        Glimpses glimpses = Glimpses(renderer);
+        C3D c3d = C3D(glimpses);
         // Saliency saliency = Saliency(glimpses, S_ITTI);
         // ScoreSpace space = saliency.getScoreSpace();
         // vector<tuple<int, int>> path = space.getBestPath();

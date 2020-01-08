@@ -22,6 +22,7 @@ public:
     Glimpses(Renderer renderer);
     int length();
     VideoInfo get(int index);
+    VideoInfo getOriginalVideo();
     int splitCount();
 
 };
