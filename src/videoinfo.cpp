@@ -3,7 +3,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-VideoInfo::VideoInfo(string path) {
+VideoInfo::VideoInfo(string path, int split, int phi, int lambda) {
     this->path = path;
 
     fs::path p = fs::path(this->path);
@@ -21,6 +21,9 @@ VideoInfo::VideoInfo(string path) {
     this->width = static_cast<int>(round(video.get(cv::CAP_PROP_FRAME_WIDTH)));
     this->height = static_cast<int>(round(video.get(cv::CAP_PROP_FRAME_HEIGHT)));
     this->size = cv::Size(this->width, this->height);
+    this->split = split;
+    this->phi = phi;
+    this->lambda = lambda;
 
     if (video.isOpened())
         video.release();

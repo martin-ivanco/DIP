@@ -3,8 +3,10 @@
 using namespace std;
 
 ScoreSpace::ScoreSpace(int splitCount) {
-    this->space = vector<vector<vector<double>>>(splitCount, vector<vector<double>>(PHIS_LENGTH, vector<double>(LAMBDAS_LENGTH)));
-    this->accumulator = vector<vector<vector<Trace>>>(splitCount, vector<vector<Trace>>(PHIS_LENGTH, vector<Trace>(LAMBDAS_LENGTH)));
+    this->space = vector<vector<vector<double>>>(splitCount,
+        vector<vector<double>>(PHIS_LENGTH, vector<double>(LAMBDAS_LENGTH)));
+    this->accumulator = vector<vector<vector<Trace>>>(splitCount,
+        vector<vector<Trace>>(PHIS_LENGTH, vector<Trace>(LAMBDAS_LENGTH)));
 }
 
 void ScoreSpace::set(int time, int phi, int lambda, double score) {
@@ -26,21 +28,25 @@ void ScoreSpace::set(int time, int phi, int lambda, double score) {
 vector<tuple<int, int>> ScoreSpace::getBestPath() {
     vector<tuple<int, int>> path(this->space.size(), make_tuple(0, 0));
     
+    // Initialization - scores from first time split
     for (int p = 0; p < PHIS_LENGTH; p++) {
         for (int l = 0; l < LAMBDAS_LENGTH; l++) {
             this->accumulator[0][p][l] = Trace {-1, -1, this->space[0][p][l]};
         }
     }
 
+    // Main section - find best ancestor and add score
     for (int t = 1; t < this->space.size(); t++) {
         for (int p = 0; p < PHIS_LENGTH; p++) {
             for (int l = 0; l < LAMBDAS_LENGTH; l++) {
                 Trace a = this->findBestAncestor(t, p, l);
-                this->accumulator[t][p][l] = Trace {a.phi, a.lambda, a.score + this->space[t][p][l]};
+                this->accumulator[t][p][l] = 
+                    Trace {a.phi, a.lambda, a.score + this->space[t][p][l]};
             }
         }
     }
 
+    // Finding the best score in the final time split
     Trace bestEnd = {-1, -1, 0};
     for (int p = 0; p < PHIS_LENGTH; p++) {
         for (int l = 0; l < LAMBDAS_LENGTH; l++) {
@@ -51,24 +57,28 @@ vector<tuple<int, int>> ScoreSpace::getBestPath() {
         }
     }
 
+    // Backtracking - find the path that leads to the best score
     Trace pTrace = bestEnd;
     for (int t = this->space.size() - 2; t >= 0; t--) {
         path[t]= make_tuple(pTrace.phi, pTrace.lambda);
         pTrace = this->accumulator[t][pTrace.phi][pTrace.lambda];
     }
 
-    this->saveToFile();
+    this->saveToFile(); // for development only
     return path;
 }
 
 Trace ScoreSpace::findBestAncestor(int time, int phi, int lambda) {
     Trace t = {-1, -1, 0};
+
+    // Find the best score in previous layer with close phi and lambda
     for (int p = -1; p < 2; p++) {
         if ((phi + p >= 0) && (phi + p < PHIS_LENGTH)) {
             for (int l = -1; l < 2; l++) {
                 if ((lambda + l >= 0) && (lambda + l < LAMBDAS_LENGTH)) {
                     if (t.score <= this->accumulator[time - 1][phi + p][lambda + l].score)
-                        t = {phi + p, lambda + l, this->accumulator[time - 1][phi + p][lambda + l].score};
+                        t = {phi + p, lambda + l,
+                            this->accumulator[time - 1][phi + p][lambda + l].score};
                 }
             }
         } 

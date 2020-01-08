@@ -14,6 +14,8 @@
 
 using namespace std;
 
+static const string FANG_MODEL_PATH = "../external/crop/models/Trained_model21.yml";
+
 class AutoCrop {
 
 private:
@@ -22,8 +24,8 @@ private:
     cv::Mat getSaliencyMap(cv::Mat frame, int type);
     cv::Rect getROI(cv::Mat frame, cv::Mat saliency, int type);
     tuple<double, double, double> getCoords(cv::Rect roi);
-    void saveToFile();
-    void loadFromFile(string filePath);
+    void saveToFile(); // for development only
+    void loadFromFile(string filePath); // for development only
 
 public:
     AutoCrop(string videoFilePath, int saliencyType);

@@ -21,7 +21,7 @@ struct VideoInfo {
     int phi = 0;
     int lambda = 0;
 
-    VideoInfo(string path);
+    VideoInfo(string path, int split = 0, int phi = 0, int lambda = 0);
     VideoInfo(string path, int fps, cv::Size size, int split = 0, int phi = 0, int lambda = 0);
 };
 

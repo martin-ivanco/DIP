@@ -5,7 +5,7 @@ namespace fs = std::filesystem;
 
 Glimpses::Glimpses(Renderer renderer) : renderer(renderer) {
     if (SKIP_GLIMPSES) {
-        this->fillQuick();
+        this->fillQuick(); // for development only
         return;
     }
 

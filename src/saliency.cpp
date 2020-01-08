@@ -2,9 +2,10 @@
 
 using namespace std;
 
-Saliency::Saliency(Glimpses glimpses, int saliencyType) : glimpses(glimpses), space(glimpses.splitCount()) {
+Saliency::Saliency(Glimpses glimpses, int saliencyType) 
+    : glimpses(glimpses), space(glimpses.splitCount()) {
     if (SKIP_SALIENCY) {
-        this->space.loadFromFile();
+        this->space.loadFromFile(); // for development only 
         return;
     }
 
@@ -19,7 +20,6 @@ Saliency::Saliency(Glimpses glimpses, int saliencyType) : glimpses(glimpses), sp
     for (int i = 0; i < glimpses.length(); i++) {
         g = this->glimpses.get(i);
         Tools::print("Evaluating glimpse " + to_string(i + 1) + " of " + to_string(glimpses.length()) + ": ", L_DEBUG);
-        // this->space.set(g.split, g.phi, g.lambda, this->getGlimpseScore(g));
         this->space.set(g.split, g.phi, g.lambda, this->getGlimpseScoreQuick(g)); // for development only 
     }
 }
@@ -29,6 +29,7 @@ ScoreSpace Saliency::getScoreSpace() {
 }
 
 double Saliency::getGlimpseScore(VideoInfo glimpse) {
+    // TODO better median
     cv::VideoCapture video = cv::VideoCapture(glimpse.path);
     if (! video.isOpened())
         return 0;
@@ -49,6 +50,7 @@ double Saliency::getGlimpseScore(VideoInfo glimpse) {
 }
 
 double Saliency::getFrameScore(cv::Mat frame) {
+    // TODO median
     cv::Mat saliencyMap = this->getSaliencyMap(frame);
     double sum = 0;
     for (int i = 0; i < GLIMPSE_HEIGHT; i++) {

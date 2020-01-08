@@ -58,7 +58,7 @@ cv::Rect AutoCrop::getROI(cv::Mat frame, cv::Mat saliency, int type) {
     }
 
     if (type == S_MARGOLIN) {
-        AutocropFang fang = AutocropFang(frame, saliency, "../external/crop/models/Trained_model21.yml");
+        AutocropFang fang = AutocropFang(frame, saliency, FANG_MODEL_PATH);
         fang.WHratioCrop(16, 9, 1, 1);
         return cv::Rect(fang.getX(), fang.getY(), fang.getWidth(), fang.getHeight());
     }
@@ -66,7 +66,8 @@ cv::Rect AutoCrop::getROI(cv::Mat frame, cv::Mat saliency, int type) {
     if (type == S_STENTIFORD) {
         AutocropStentiford stentiford = AutocropStentiford(saliency);
         stentiford.randomWHratio(16, 9, 1.5f);
-        return cv::Rect(stentiford.getX(), stentiford.getY(), stentiford.getWidth(), stentiford.getHeight());
+        return cv::Rect(stentiford.getX(), stentiford.getY(),
+            stentiford.getWidth(), stentiford.getHeight());
     }
 
     return cv::Rect();
@@ -78,6 +79,7 @@ tuple<double, double, double> AutoCrop::getCoords(cv::Rect roi) {
     return {phi - CV_PI / 2, lam - CV_PI, roi.width / 1280.0 * 360};
 }
 
+// for development only
 void AutoCrop::saveToFile() {
     ofstream file("../Playground/crop_path.txt");
     for (int i = 0; i < this->path.size(); i++) {
@@ -85,6 +87,7 @@ void AutoCrop::saveToFile() {
     }
 }
 
+// for development only
 void AutoCrop::loadFromFile(string filePath) {
 
 }
