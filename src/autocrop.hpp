@@ -21,9 +21,9 @@ private:
 
     vector<tuple<double, double, double>> path;
 
-    cv::Mat getSaliencyMap(cv::Mat frame, int type);
-    cv::Rect getROI(cv::Mat frame, cv::Mat saliency, int type);
-    tuple<double, double, double> getCoords(cv::Rect roi);
+    cv::Mat getSaliencyMap(cv::Mat &frame, int type);
+    cv::Rect getROI(cv::Mat &frame, cv::Mat &saliency, int type);
+    tuple<double, double, double> getCoords(cv::Rect &roi);
     void saveToFile(); // for development only
     void loadFromFile(string filePath); // for development only
 

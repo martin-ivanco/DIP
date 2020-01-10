@@ -3,7 +3,10 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-Glimpses::Glimpses(Renderer renderer) : renderer(renderer) {
+const vector<int> Glimpses::PHIS = {-75,-45,-30, -20, -10, 0, 10, 20, 30, 45, 75};
+const vector<int> Glimpses::LAMBDAS = {-180, -160, -140, -120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120, 140, 160};
+
+Glimpses::Glimpses(Renderer &renderer) : renderer(renderer) {
     // this->fillQuick(); // for development only - skip glimpses
     // return;
 
@@ -12,7 +15,8 @@ Glimpses::Glimpses(Renderer renderer) : renderer(renderer) {
     vector<VideoInfo> views;
     for (auto p : Glimpses::PHIS) {
         for (auto l : Glimpses::LAMBDAS) {
-            views = renderer.composeViews(p, l, this->splits);
+            cv::Size size(Glimpses::WIDTH, Glimpses::HEIGHT);
+            views = renderer.composeViews(p, l, this->splits, size);
             this->glimpses.insert(this->glimpses.end(), views.begin(), views.end());
         }
     }

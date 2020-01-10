@@ -10,6 +10,7 @@ AutoCrop::AutoCrop(string videoFilePath, int saliencyType) {
         throw runtime_error("Couldn't open video.");
 
     cv::Mat frame;
+    cv::Mat saliencyMap;
     cv::Rect crop;
     int counter = 0;
     while (true) {
@@ -18,7 +19,8 @@ AutoCrop::AutoCrop(string videoFilePath, int saliencyType) {
             break;
         
         cerr << "Evaulating frame " << counter++ << endl;
-        crop = this->getROI(frame, this->getSaliencyMap(frame, saliencyType), saliencyType);
+        saliencyMap = this->getSaliencyMap(frame, saliencyType);
+        crop = this->getROI(frame, saliencyMap, saliencyType);
         this->path.push_back(this->getCoords(crop));
     }
 
@@ -30,7 +32,7 @@ vector<tuple<double, double, double>> AutoCrop::getPath() {
     return this->path;
 }
 
-cv::Mat AutoCrop::getSaliencyMap(cv::Mat frame, int type) {
+cv::Mat AutoCrop::getSaliencyMap(cv::Mat &frame, int type) {
     cerr << "Getting saliency" << endl;
     if (type == Saliency::ITTI) {
         SalMapItti itti = SalMapItti(frame);
@@ -51,7 +53,7 @@ cv::Mat AutoCrop::getSaliencyMap(cv::Mat frame, int type) {
     return cv::Mat();
 }
 
-cv::Rect AutoCrop::getROI(cv::Mat frame, cv::Mat saliency, int type) {
+cv::Rect AutoCrop::getROI(cv::Mat &frame, cv::Mat &saliency, int type) {
     cerr << "Getting ROI" << endl;
     if (type == Saliency::ITTI) {
         AutocropSuh suh = AutocropSuh(saliency);
@@ -75,7 +77,7 @@ cv::Rect AutoCrop::getROI(cv::Mat frame, cv::Mat saliency, int type) {
     return cv::Rect();
 }
 
-tuple<double, double, double> AutoCrop::getCoords(cv::Rect roi) {
+tuple<double, double, double> AutoCrop::getCoords(cv::Rect &roi) {
     double lam = (roi.x + roi.width / 2.0) * (2 * CV_PI) / 1280;
     double phi = (roi.y + roi.height / 2.0)* CV_PI / 720;
     return {phi - CV_PI / 2, lam - CV_PI, roi.width / 1280.0 * 360};

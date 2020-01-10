@@ -5,10 +5,10 @@
 #include <tuple>
 
 #include "argparse.hpp"
-#include "renderer.hpp"
 #include "autocrop.hpp"
-#include "glimpses.hpp"
 #include "c3d.hpp"
+#include "glimpses.hpp"
+#include "renderer.hpp"
 #include "saliency.hpp"
 #include "scorespace.hpp"
 
@@ -24,9 +24,10 @@ int main(int argc, char **argv) {
         cerr << "ERROR: " << err << endl;
         return 1;
     }
+    cv::Size size(Glimpses::WIDTH, Glimpses::HEIGHT);
         
     // TODO CHECK INPUT PATH
-    
+
     if (arg.method == ArgParse::AUTOCROP) {
         Renderer renderer("data/input/test.mp4");
         vector<tuple<double, double, double>> path;
@@ -43,33 +44,33 @@ int main(int argc, char **argv) {
             return 1;
         }
 
-        renderer.renderPath(path);
+        renderer.renderPath(path, size);
     }
 
     if (arg.method == ArgParse::GLIMPSES) {
         Renderer renderer("data/input/test.mp4");
+        Glimpses glimpses(renderer);
         vector<tuple<int, int>> path;
 
         if (arg.submethod == ArgParse::GLIMPSES_C3D) {
             cerr << "WARNING: " << "This method is incomplete. C3D will be generated." << endl;
-            Glimpses glimpses(renderer);
             C3D c3d(glimpses);
         }
 
         if (arg.submethod == ArgParse::GLIMPSES_ITT) {
-            Saliency sal(Glimpses(renderer), Saliency::ITTI);
+            Saliency sal(glimpses, Saliency::ITTI);
             path = sal.getScoreSpace().getBestPath();
         }
         if (arg.submethod == ArgParse::GLIMPSES_STE) {
-            Saliency sal(Glimpses(renderer), Saliency::STENTIFORD);
+            Saliency sal(glimpses, Saliency::STENTIFORD);
             path = sal.getScoreSpace().getBestPath();
         }
         if (arg.submethod == ArgParse::GLIMPSES_MAR) {
-            Saliency sal(Glimpses(renderer), Saliency::MARGOLIN);
+            Saliency sal(glimpses, Saliency::MARGOLIN);
             path = sal.getScoreSpace().getBestPath();
         }
 
-        renderer.renderSplitPath(path);
+        renderer.renderSplitPath(path, Glimpses::PHIS, Glimpses::LAMBDAS, size, Glimpses::SPLIT_LENGTH);
     }
 
     // try {

@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Saliency::Saliency(Glimpses glimpses, int saliencyType) 
+Saliency::Saliency(Glimpses &glimpses, int saliencyType) 
     : glimpses(glimpses), space(glimpses.splitCount()) {
     // this->space.loadFromFile(); // for development only - skip salinecy
     // return;
@@ -25,7 +25,7 @@ ScoreSpace Saliency::getScoreSpace() {
     return this->space;
 }
 
-double Saliency::getGlimpseScore(VideoInfo glimpse) {
+double Saliency::getGlimpseScore(VideoInfo &glimpse) {
     // TODO better median
     cv::VideoCapture video = cv::VideoCapture(glimpse.path);
     if (! video.isOpened())
@@ -45,7 +45,7 @@ double Saliency::getGlimpseScore(VideoInfo glimpse) {
     return result;
 }
 
-double Saliency::getFrameScore(cv::Mat frame) {
+double Saliency::getFrameScore(cv::Mat &frame) {
     // TODO median
     cv::Mat saliencyMap = this->getSaliencyMap(frame);
     double sum = 0;
@@ -56,24 +56,24 @@ double Saliency::getFrameScore(cv::Mat frame) {
     return sum / (Glimpses::WIDTH * Glimpses::HEIGHT);
 }
 
-cv::Mat Saliency::getSaliencyMapItti(cv::Mat frame) {
+cv::Mat Saliency::getSaliencyMapItti(cv::Mat &frame) {
     SalMapItti itti = SalMapItti(frame);
     return itti.salMap;
 }
 
-cv::Mat Saliency::getSaliencyMapMargolin(cv::Mat frame) {
+cv::Mat Saliency::getSaliencyMapMargolin(cv::Mat &frame) {
     SalMapMargolin margolin = SalMapMargolin(frame);
     return margolin.salMap;
 }
 
-cv::Mat Saliency::getSaliencyMapStentiford(cv::Mat frame) {
+cv::Mat Saliency::getSaliencyMapStentiford(cv::Mat &frame) {
     SalMapStentiford stentiford = SalMapStentiford(frame);
     stentiford.generateSalMap();
     return stentiford.salMap;
 }
 
 // for development only
-double Saliency::getGlimpseScoreQuick(VideoInfo glimpse) {
+double Saliency::getGlimpseScoreQuick(VideoInfo &glimpse) {
     cv::VideoCapture video = cv::VideoCapture(glimpse.path);
     if (! video.isOpened())
         return 0;

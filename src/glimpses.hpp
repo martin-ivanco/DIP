@@ -19,12 +19,12 @@ private:
 
 public:
     static const int SPLIT_LENGTH = 5; // seconds
-    static const int PHIS[11] = {-75,-45,-30, -20, -10, 0, 10, 20, 30, 45, 75};
-    static const int LAMBDAS[18] = {-180, -160, -140, -120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120, 140, 160};
+    static const vector<int> PHIS;
+    static const vector<int> LAMBDAS;
     static const int WIDTH = 640;
     static const int HEIGHT = 360;
 
-    Glimpses(Renderer renderer);
+    Glimpses(Renderer &renderer);
     int length();
     VideoInfo get(int index);
     VideoInfo getOriginalVideo();

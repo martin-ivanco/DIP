@@ -31,7 +31,7 @@ private:
     void extract();
 
 public:
-    C3D(Glimpses glimpses);
+    C3D(Glimpses &glimpses);
 
 };
 

@@ -12,7 +12,7 @@ const string C3D::MODEL_PATH = "external/c3d/trained_model";
 const string C3D::GPU_ID = "0";
 const string C3D::FEATURES = "fc6-1 fc7-1";
 
-C3D::C3D(Glimpses glimpses): glimpses(glimpses) {
+C3D::C3D(Glimpses &glimpses): glimpses(glimpses) {
     this->c3d_path = fs::path("data") / fs::path("c3d");
     fs::create_directories(this->c3d_path);
     this->prepare();
