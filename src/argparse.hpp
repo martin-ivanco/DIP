@@ -16,7 +16,7 @@ private:
     vector<string> args;
 
 public:
-    static const string input_folder;
+    static const string INPUT_FOLDER;
     static const int UNASSIGNED = -1;
 
     static const int AUTOCROP = 0;

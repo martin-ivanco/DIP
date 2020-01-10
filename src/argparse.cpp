@@ -3,7 +3,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-const string ArgParse::input_folder = "data/input";
+const string ArgParse::INPUT_FOLDER = "data/input";
 
 ArgParse::ArgParse(int argc, char **argv) {
     for (int i = 1; i < argc; i++)
@@ -76,10 +76,10 @@ string ArgParse::parse() {
 }
 
 string ArgParse::getInputs(vector<string> &input_paths) {
-    if (! fs::exists(ArgParse::input_folder))
+    if (! fs::exists(ArgParse::INPUT_FOLDER))
         return "Non-existent input folder.";
 
-    if (fs::is_empty(ArgParse::input_folder))
+    if (fs::is_empty(ArgParse::INPUT_FOLDER))
         return "Empty input folder.";
 
     for (auto file : fs::directory_iterator("data/input")) {
