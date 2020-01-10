@@ -9,14 +9,16 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
+#include "saliency.hpp"
 #include "videoinfo.hpp"
-#include "constants.hpp"
 
 using namespace std;
 
 class Renderer {
 
 private:
+    static const int FOURCC = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
+
     VideoInfo originalVideo;
     string folderPath;
 

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 
-#include "constants.hpp"
+#include "saliency.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
 #include "../external/saliency/SalMapStentiford.h"
@@ -14,11 +14,11 @@
 
 using namespace std;
 
-static const string FANG_MODEL_PATH = "../external/crop/models/Trained_model21.yml";
-
 class AutoCrop {
 
 private:
+    static const string FANG_MODEL_PATH;
+
     vector<tuple<double, double, double>> path;
 
     cv::Mat getSaliencyMap(cv::Mat frame, int type);

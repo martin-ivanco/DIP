@@ -5,9 +5,7 @@
 #include <string>
 
 #include "glimpses.hpp"
-#include "constants.hpp"
 #include "scorespace.hpp"
-#include "tools.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
 #include "../external/saliency/SalMapStentiford.h"
@@ -30,6 +28,10 @@ private:
     static cv::Mat getSaliencyMapStentiford(cv::Mat frame);
 
 public:
+    static const int ITTI = 0;
+    static const int MARGOLIN = 1;
+    static const int STENTIFORD = 2;
+
     Saliency(Glimpses glimpses, int saliencyType);
     ScoreSpace getScoreSpace();
 

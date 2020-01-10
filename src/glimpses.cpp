@@ -4,16 +4,14 @@ using namespace std;
 namespace fs = std::filesystem;
 
 Glimpses::Glimpses(Renderer renderer) : renderer(renderer) {
-    if (SKIP_GLIMPSES) {
-        this->fillQuick(); // for development only
-        return;
-    }
+    // this->fillQuick(); // for development only - skip glimpses
+    // return;
 
-    this->splits = renderer.splitVideo(SPLIT_LENGTH_SECONDS);
+    this->splits = renderer.splitVideo(Glimpses::SPLIT_LENGTH);
     
     vector<VideoInfo> views;
-    for (auto p : PHIS) {
-        for (auto l : LAMBDAS) {
+    for (auto p : Glimpses::PHIS) {
+        for (auto l : Glimpses::LAMBDAS) {
             views = renderer.composeViews(p, l, this->splits);
             this->glimpses.insert(this->glimpses.end(), views.begin(), views.end());
         }
@@ -55,7 +53,7 @@ void Glimpses::fillQuick() {
             for (int i = 0; i < this->splits.size(); i++) {
                 sprintf (buffer, "%s_g%.4d_h%.3d_v%.3d.mp4", originalVideo.name.c_str(), i, l, p);
                 string glimpsePath = fs::path(folderPath) / string(buffer);
-                VideoInfo glimpse = VideoInfo(glimpsePath, static_cast<double>(originalVideo.fps), cv::Size(GLIMPSE_WIDTH, GLIMPSE_HEIGHT), i, p, l);
+                VideoInfo glimpse = VideoInfo(glimpsePath, static_cast<double>(originalVideo.fps), cv::Size(Glimpses::WIDTH, Glimpses::HEIGHT), i, p, l);
                 this->glimpses.push_back(glimpse);
             }
         }

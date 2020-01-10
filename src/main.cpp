@@ -12,8 +12,6 @@
 #include "saliency.hpp"
 #include "scorespace.hpp"
 
-#include "constants.hpp"
-
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -34,11 +32,11 @@ int main(int argc, char **argv) {
         vector<tuple<double, double, double>> path;
 
         if (arg.submethod == ArgParse::AUTOCROP_SUH)
-            path = AutoCrop("data/input/test.mp4", S_ITTI).getPath();
+            path = AutoCrop("data/input/test.mp4", Saliency::ITTI).getPath();
         if (arg.submethod == ArgParse::AUTOCROP_STE)
-            path = AutoCrop("data/input/test.mp4", S_STENTIFORD).getPath();
+            path = AutoCrop("data/input/test.mp4", Saliency::STENTIFORD).getPath();
         if (arg.submethod == ArgParse::AUTOCROP_FAN)
-            path = AutoCrop("data/input/test.mp4", S_MARGOLIN).getPath();
+            path = AutoCrop("data/input/test.mp4", Saliency::MARGOLIN).getPath();
 
         if (arg.submethod == ArgParse::AUTOCROP_360) {
             cerr << "ERROR: " << "Sorry, the 360 saliency method is not yet supported." << endl;
@@ -54,20 +52,20 @@ int main(int argc, char **argv) {
 
         if (arg.submethod == ArgParse::GLIMPSES_C3D) {
             cerr << "WARNING: " << "This method is incomplete. C3D will be generated." << endl;
-            Glimpses glimpses = Glimpses(renderer);
-            C3D c3d = C3D(glimpses);
+            Glimpses glimpses(renderer);
+            C3D c3d(glimpses);
         }
 
         if (arg.submethod == ArgParse::GLIMPSES_ITT) {
-            Saliency sal(Glimpses(renderer), S_ITTI);
+            Saliency sal(Glimpses(renderer), Saliency::ITTI);
             path = sal.getScoreSpace().getBestPath();
         }
         if (arg.submethod == ArgParse::GLIMPSES_STE) {
-            Saliency sal(Glimpses(renderer), S_STENTIFORD);
+            Saliency sal(Glimpses(renderer), Saliency::STENTIFORD);
             path = sal.getScoreSpace().getBestPath();
         }
         if (arg.submethod == ArgParse::GLIMPSES_MAR) {
-            Saliency sal(Glimpses(renderer), S_MARGOLIN);
+            Saliency sal(Glimpses(renderer), Saliency::MARGOLIN);
             path = sal.getScoreSpace().getBestPath();
         }
 

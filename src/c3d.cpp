@@ -5,14 +5,11 @@ namespace fs = std::filesystem;
 
 const string C3D::INPUT_LIST_NAME = "input_list.txt";
 const string C3D::OUTPUT_PREFIX_NAME = "output_prefix.txt";
-const int C3D::SEGMENT_COUNT = 9;
-const int C3D::SEGMENT_LENGTH = 16;
 const string C3D::GLOG_CMD = "GLOG_logtosterr=1";
 const string C3D::EXTRACTOR_PATH = "external/c3d/extract_image_features.bin";
 const string C3D::PROTOTXT_PATH = "external/c3d/c3d_feature_extractor.prototxt";
 const string C3D::MODEL_PATH = "external/c3d/trained_model";
 const string C3D::GPU_ID = "0";
-const int C3D::BATCH_SIZE = 25;
 const string C3D::FEATURES = "fc6-1 fc7-1";
 
 C3D::C3D(Glimpses glimpses): glimpses(glimpses) {

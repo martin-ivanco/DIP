@@ -2,6 +2,8 @@
 
 using namespace std;
 
+const string AutoCrop::FANG_MODEL_PATH = "../external/crop/models/Trained_model21.yml";
+
 AutoCrop::AutoCrop(string videoFilePath, int saliencyType) {
     cv::VideoCapture video = cv::VideoCapture(videoFilePath);
     if (! video.isOpened())
@@ -30,17 +32,17 @@ vector<tuple<double, double, double>> AutoCrop::getPath() {
 
 cv::Mat AutoCrop::getSaliencyMap(cv::Mat frame, int type) {
     cerr << "Getting saliency" << endl;
-    if (type == S_ITTI) {
+    if (type == Saliency::ITTI) {
         SalMapItti itti = SalMapItti(frame);
         return itti.salMap;
     }
 
-    if (type == S_MARGOLIN) {
+    if (type == Saliency::MARGOLIN) {
         SalMapMargolin margolin = SalMapMargolin(frame);
         return margolin.salMap;
     }
 
-    if (type == S_STENTIFORD) {
+    if (type == Saliency::STENTIFORD) {
         SalMapStentiford stentiford = SalMapStentiford(frame);
         stentiford.generateSalMap();
         return stentiford.salMap;
@@ -51,19 +53,19 @@ cv::Mat AutoCrop::getSaliencyMap(cv::Mat frame, int type) {
 
 cv::Rect AutoCrop::getROI(cv::Mat frame, cv::Mat saliency, int type) {
     cerr << "Getting ROI" << endl;
-    if (type == S_ITTI) {
+    if (type == Saliency::ITTI) {
         AutocropSuh suh = AutocropSuh(saliency);
         suh.bruteForceWHratio(16, 9, 0.6f, 10, 10);
         return cv::Rect(suh.getX(), suh.getY(), suh.getWidth(), suh.getHeight());
     }
 
-    if (type == S_MARGOLIN) {
-        AutocropFang fang = AutocropFang(frame, saliency, FANG_MODEL_PATH);
+    if (type == Saliency::MARGOLIN) {
+        AutocropFang fang = AutocropFang(frame, saliency, AutoCrop::FANG_MODEL_PATH);
         fang.WHratioCrop(16, 9, 1, 1);
         return cv::Rect(fang.getX(), fang.getY(), fang.getWidth(), fang.getHeight());
     }
 
-    if (type == S_STENTIFORD) {
+    if (type == Saliency::STENTIFORD) {
         AutocropStentiford stentiford = AutocropStentiford(saliency);
         stentiford.randomWHratio(16, 9, 1.5f);
         return cv::Rect(stentiford.getX(), stentiford.getY(),

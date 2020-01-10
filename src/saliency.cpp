@@ -4,22 +4,19 @@ using namespace std;
 
 Saliency::Saliency(Glimpses glimpses, int saliencyType) 
     : glimpses(glimpses), space(glimpses.splitCount()) {
-    if (SKIP_SALIENCY) {
-        this->space.loadFromFile(); // for development only 
-        return;
-    }
+    // this->space.loadFromFile(); // for development only - skip salinecy
+    // return;
 
-    if (saliencyType == S_ITTI)
+    if (saliencyType == Saliency::ITTI)
         this->getSaliencyMap = this->getSaliencyMapItti;
-    if (saliencyType == S_MARGOLIN)
+    if (saliencyType == Saliency::MARGOLIN)
         this->getSaliencyMap = this->getSaliencyMapMargolin;
-    if (saliencyType == S_STENTIFORD)
+    if (saliencyType == Saliency::STENTIFORD)
         this->getSaliencyMap = this->getSaliencyMapStentiford;
 
     VideoInfo g = VideoInfo("", 0, cv::Size(0, 0));
     for (int i = 0; i < glimpses.length(); i++) {
         g = this->glimpses.get(i);
-        Tools::print("Evaluating glimpse " + to_string(i + 1) + " of " + to_string(glimpses.length()) + ": ", L_DEBUG);
         this->space.set(g.split, g.phi, g.lambda, this->getGlimpseScoreQuick(g)); // for development only 
     }
 }
@@ -45,7 +42,6 @@ double Saliency::getGlimpseScore(VideoInfo glimpse) {
     sort(scores.begin(), scores.end());
     double result = scores[scores.size() / 2];
 
-    Tools::print(to_string(result) + "\n", L_DEBUG);
     return result;
 }
 
@@ -53,11 +49,11 @@ double Saliency::getFrameScore(cv::Mat frame) {
     // TODO median
     cv::Mat saliencyMap = this->getSaliencyMap(frame);
     double sum = 0;
-    for (int i = 0; i < GLIMPSE_HEIGHT; i++) {
-        for (int j = 0; j < GLIMPSE_WIDTH; j++)
+    for (int i = 0; i < Glimpses::HEIGHT; i++) {
+        for (int j = 0; j < Glimpses::WIDTH; j++)
             sum += saliencyMap.at<uchar>(i, j);
     }
-    return sum / (GLIMPSE_WIDTH * GLIMPSE_HEIGHT);
+    return sum / (Glimpses::WIDTH * Glimpses::HEIGHT);
 }
 
 cv::Mat Saliency::getSaliencyMapItti(cv::Mat frame) {
@@ -94,7 +90,5 @@ double Saliency::getGlimpseScoreQuick(VideoInfo glimpse) {
     if (frame.empty())
         return 0;
 
-    double result = this->getFrameScore(frame);
-    Tools::print(to_string(result) + "\n", L_DEBUG);
-    return result;
+    return this->getFrameScore(frame);
 }

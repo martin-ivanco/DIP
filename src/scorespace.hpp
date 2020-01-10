@@ -1,11 +1,13 @@
 #ifndef __SCORESPACE__
 #define __SCORESPACE__
 
+#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 
-#include "constants.hpp"
+#include "glimpses.hpp"
 
 using namespace std;
 
