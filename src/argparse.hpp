@@ -2,8 +2,11 @@
 #define __ARGPARSE__
 
 #include <iostream>
+#include <filesystem>
 #include <vector>
 #include <string>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
 
 using namespace std;
 
@@ -13,6 +16,7 @@ private:
     vector<string> args;
 
 public:
+    static const string input_folder;
     static const int UNASSIGNED = -1;
 
     static const int AUTOCROP = 0;
@@ -33,6 +37,7 @@ public:
 
     ArgParse(int argc, char **argv);
     string parse();
+    string getInputs(vector<string> &input_paths);
 
 };
 

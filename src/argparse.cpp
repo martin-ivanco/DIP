@@ -1,6 +1,9 @@
 #include "argparse.hpp"
 
 using namespace std;
+namespace fs = std::filesystem;
+
+const string ArgParse::input_folder = "data/input";
 
 ArgParse::ArgParse(int argc, char **argv) {
     for (int i = 1; i < argc; i++)
@@ -65,5 +68,31 @@ string ArgParse::parse() {
         }
         return string("Invalid argument ") + this->args[i] + string(".");
     }
+
+    if (this->method == ArgParse::UNASSIGNED)
+        return "Parameter -m is required.";
+
+    return "";
+}
+
+string ArgParse::getInputs(vector<string> &input_paths) {
+    if (! fs::exists(ArgParse::input_folder))
+        return "Non-existent input folder.";
+
+    if (fs::is_empty(ArgParse::input_folder))
+        return "Empty input folder.";
+
+    for (auto file : fs::directory_iterator("data/input")) {
+        string ext = file.path().extension().string();
+        if ((ext == string(".mp4")) || (ext == string(".avi"))) {
+            cv::VideoCapture test(file.path().string());
+            if (test.isOpened())
+                input_paths.push_back(file.path());
+        }
+    }
+
+    if (input_paths.empty())
+        return "No valid video file in input folder.";
+
     return "";
 }

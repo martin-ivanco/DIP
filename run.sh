@@ -12,9 +12,11 @@ elif [ "$run_type" = "rebuild" ]; then
   cmake -H. -Bbuild
   make -C build
 elif [ "$run_type" = "run" ]; then
-  build/auto360cam
-else
+  build/auto360cam ${@:2}
+elif [ "$run_type" = "" ]; then
   cmake -H. -Bbuild
   make -C build
-  build/auto360cam
+  build/auto360cam ${@:2}
+else
+  echo "Unknown argument $run_type"
 fi
