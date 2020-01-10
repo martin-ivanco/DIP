@@ -4,13 +4,15 @@ project( auto360cam )
 
 find_package( OpenCV REQUIRED )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17" )
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set( VLFEAT_INCLUDE_DIRS "external/vlfeat" )
 
 include_directories( ${OpenCV_INCLUDE_DIRS} ${VLFEAT_INCLUDE_DIRS} ) 
 
 add_executable( auto360cam "src/main.cpp"
+"src/argparse.cpp"
 "src/autocrop.cpp"
 "src/c3d.cpp"
 "src/glimpses.cpp"
