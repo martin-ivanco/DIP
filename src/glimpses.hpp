@@ -3,15 +3,17 @@
 
 #include <iostream>
 
-#include "videoinfo.hpp"
+#include "logger.hpp"
 #include "renderer.hpp"
+#include "videoinfo.hpp"
 
 using namespace std;
 
 class Glimpses {
 
 private:
-    Renderer renderer;
+    Logger *log;
+    Renderer *renderer;
     vector<VideoInfo> splits;
     vector<VideoInfo> glimpses;
 
@@ -24,7 +26,7 @@ public:
     static const int WIDTH = 640;
     static const int HEIGHT = 360;
 
-    Glimpses(Renderer &renderer);
+    Glimpses(Renderer &renderer, Logger &log, bool skip_existing = false);
     int length();
     VideoInfo get(int index);
     VideoInfo getOriginalVideo();

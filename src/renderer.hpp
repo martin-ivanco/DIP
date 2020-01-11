@@ -5,6 +5,7 @@
 #include <cmath>
 #include <filesystem>
 #include <string>
+#include <tuple>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
@@ -34,9 +35,9 @@ private:
 
 public:
     Renderer(string videoFilePath);
-    vector<VideoInfo> splitVideo(int splitLength);
-    vector<VideoInfo> composeViews(int phi, int lambda, vector<VideoInfo> &videos, cv::Size &size);
-    VideoInfo renderSplitPath(vector<tuple<int, int>> &path, const vector<int> &phis, const vector<int> &lambdas, cv::Size &size, int split_length);
+    vector<VideoInfo> splitVideo(int splitLength, bool skipExisting = false);
+    vector<VideoInfo> composeViews(int phi, int lambda, vector<VideoInfo> &videos, cv::Size &size, bool skipExisting = false);
+    VideoInfo renderSplitPath(vector<tuple<int, int>> &path, const vector<int> &phis, const vector<int> &lambdas, cv::Size &size, int splitLength);
     VideoInfo renderPath(vector<tuple<double, double, double>> &path, cv::Size &size);
     
     VideoInfo getVideoInfo(); // for development only

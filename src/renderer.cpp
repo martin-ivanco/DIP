@@ -11,7 +11,7 @@ Renderer::Renderer(string videoFilePath) : originalVideo(videoFilePath) {
         throw runtime_error("Could not create directory!");
 }
 
-vector<VideoInfo> Renderer::splitVideo(int splitLength) {
+vector<VideoInfo> Renderer::splitVideo(int splitLength, bool skipExisting) {
     vector<VideoInfo> splits;
 
     cv::VideoCapture video;
@@ -24,7 +24,8 @@ vector<VideoInfo> Renderer::splitVideo(int splitLength) {
     {
         string splitPath = fs::path(this->folderPath) / this->getSplitName(splits.size());
         VideoInfo split = VideoInfo(splitPath, static_cast<double>(this->originalVideo.fps), this->originalVideo.size);
-        this->open(writer, splitPath, split.fps, split.size);
+        if ((! skipExisting) || (! fs::exists(splitPath)))
+            this->open(writer, splitPath, split.fps, split.size);
 
         for (int i = 0; i < this->originalVideo.fps * splitLength; i++) {
             video.read(frame);
@@ -32,9 +33,12 @@ vector<VideoInfo> Renderer::splitVideo(int splitLength) {
                 finished = true;
                 break;
             }
-            writer.write(frame);
+            if (writer.isOpened())
+                writer.write(frame);
         }
 
+        if (writer.isOpened())
+            writer.release();
         splits.push_back(split);
     }
 
@@ -42,7 +46,7 @@ vector<VideoInfo> Renderer::splitVideo(int splitLength) {
     return splits;
 }
 
-vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> &videos, cv::Size &size) {
+vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> &videos, cv::Size &size, bool skipExisting) {
     vector<VideoInfo> views;
     auto [map1, map2] = this->getStereographicDisplacementMaps(phi, lambda, size);
     cv::VideoCapture clip;
@@ -52,14 +56,15 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
 
     for (int i = 0; i < videos.size(); i++) {
         this->open(clip, videos[i].path);
-        
         string viewPath = fs::path(this->folderPath) / this->getViewName(i, phi, lambda);
         VideoInfo view = VideoInfo(viewPath, static_cast<double>(this->originalVideo.fps), size, i, phi, lambda);
-        this->open(writer, viewPath, view.fps, view.size);
 
-        while (true) {
-            if (! this->remapFrame(clip, writer, map1, map2, frame, warped))
-                break;
+        if ((! skipExisting) || (! fs::exists(viewPath))) {
+            this->open(writer, viewPath, view.fps, view.size);
+            while (true) {
+                if (! this->remapFrame(clip, writer, map1, map2, frame, warped))
+                    break;
+            }
         }
 
         views.push_back(view);
@@ -69,7 +74,7 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
     return views;
 }
 
-VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> &path, const vector<int> &phis, const vector<int> &lambdas, cv::Size &size, int split_length) {
+VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> &path, const vector<int> &phis, const vector<int> &lambdas, cv::Size &size, int splitLength) {
     cv::VideoCapture video;
     this->open(video, this->originalVideo.path);
     
@@ -82,7 +87,7 @@ VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> &path, const vector<
     cv::Mat frame;
     cv::Mat warped;
     
-    for (int i = 0; i < (split_length / 2.0) * originalVideo.fps; i++) {
+    for (int i = 0; i < (splitLength / 2.0) * originalVideo.fps; i++) {
         if (! this->remapFrame(video, writer, map1, map2, frame, warped))
             throw runtime_error("Video shorter than expected.");
     }
@@ -94,9 +99,9 @@ VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> &path, const vector<
         int diffLambda = lambdas[get<1>(path[s])] - startLambda;
         double progress = 0;
 
-        for (int i = 0; i < split_length * originalVideo.fps; i++) {
+        for (int i = 0; i < splitLength * originalVideo.fps; i++) {
             if ((diffPhi != 0) || (diffLambda != 0)) {
-                progress = static_cast<double>(i) / (split_length * originalVideo.fps);
+                progress = static_cast<double>(i) / (splitLength * originalVideo.fps);
                 tie(map1, map2) = this->getStereographicDisplacementMaps(progress * diffPhi + startPhi, progress * diffLambda + startLambda, size);
             }
 

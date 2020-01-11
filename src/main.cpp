@@ -57,12 +57,12 @@ int main(int argc, char **argv) {
 
         if (arg.method == ArgParse::GLIMPSES) {
             log.debug("Using spatio-temporal glimpses method.");
-            Glimpses glimpses(renderer);
+            Glimpses glimpses(renderer, log, arg.skip == ArgParse::SKIP_GLIMPSES);
             vector<tuple<int, int>> trajectory;
 
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
                 log.warning("This method is incomplete. C3D will be generated.");
-                C3D c3d(glimpses);
+                C3D c3d(glimpses, log);
             }
 
             if (arg.submethod == ArgParse::GLIMPSES_ITT) {

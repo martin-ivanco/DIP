@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "glimpses.hpp"
+#include "logger.hpp"
 
 using namespace std;
 
@@ -25,13 +26,14 @@ private:
     static const string FEATURES;
 
     filesystem::path c3d_path;
-    Glimpses glimpses;
+    Glimpses *glimpses;
+    Logger *log;
     
     void prepare();
     void extract();
 
 public:
-    C3D(Glimpses &glimpses);
+    C3D(Glimpses &glimpses, Logger &log);
 
 };
 

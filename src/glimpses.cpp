@@ -6,17 +6,19 @@ namespace fs = std::filesystem;
 const vector<int> Glimpses::PHIS = {-75,-45,-30, -20, -10, 0, 10, 20, 30, 45, 75};
 const vector<int> Glimpses::LAMBDAS = {-180, -160, -140, -120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120, 140, 160};
 
-Glimpses::Glimpses(Renderer &renderer) : renderer(renderer) {
-    // this->fillQuick(); // for development only - skip glimpses
-    // return;
+Glimpses::Glimpses(Renderer &renderer, Logger &log, bool skip_existing) {
+    this->log = &log;
+    this->renderer = &renderer;
+    if (skip_existing)
+        this->log->debug("Skipping existing glimpses.");
 
-    this->splits = renderer.splitVideo(Glimpses::SPLIT_LENGTH);
+    this->splits = renderer.splitVideo(Glimpses::SPLIT_LENGTH, skip_existing);
     
     vector<VideoInfo> views;
     for (auto p : Glimpses::PHIS) {
         for (auto l : Glimpses::LAMBDAS) {
             cv::Size size(Glimpses::WIDTH, Glimpses::HEIGHT);
-            views = renderer.composeViews(p, l, this->splits, size);
+            views = renderer.composeViews(p, l, this->splits, size, skip_existing);
             this->glimpses.insert(this->glimpses.end(), views.begin(), views.end());
         }
     }
@@ -31,16 +33,16 @@ VideoInfo Glimpses::get(int index) {
 }
 
 VideoInfo Glimpses::getOriginalVideo() {
-    return this->renderer.getVideoInfo();
+    return this->renderer->getVideoInfo();
 }
 
 int Glimpses::splitCount() {
     return this->splits.size();
 }
 
-// for development only
+// for development only - deprecated
 void Glimpses::fillQuick() {
-    VideoInfo originalVideo = this->renderer.getVideoInfo();
+    VideoInfo originalVideo = this->renderer->getVideoInfo();
     fs::path p = fs::path(originalVideo.folder);
     string folderPath = p / originalVideo.name;
 

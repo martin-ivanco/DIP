@@ -66,6 +66,17 @@ string ArgParse::parse() {
             return string("Invalid method ") + this->args[i]
                    + string(". Run with -h to show available methods.");
         }
+        if ((this->args[i] == string("-s")) || (this->args[i] == string("--skip-if-exists"))) {
+            if (this->args.size() < i + 2)
+                return string("Argument ") + this->args[i] + string(" needs a value.");
+            i += 1;
+            if (this->args[i] == string("g")) {
+                this->skip = ArgParse::SKIP_GLIMPSES;
+                continue;
+            }
+            return string("Invalid value '") + this->args[i]
+                   + string("' for skip if exists argument.");
+        }
         return string("Invalid argument ") + this->args[i] + string(".");
     }
 
