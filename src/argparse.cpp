@@ -5,23 +5,33 @@ namespace fs = std::filesystem;
 
 const string ArgParse::INPUT_FOLDER = "data/input";
 
-ArgParse::ArgParse(int argc, char **argv) {
+ArgParse::ArgParse(int argc, char **argv, Logger &log) {
+    this->log = &log;
+    // Move arguments to a vector
     for (int i = 1; i < argc; i++)
         this->args.push_back(argv[i]);
 }
 
-string ArgParse::parse() {
+bool ArgParse::parse() {
+    // Loop through all arguments
     for (int i = 0; i < this->args.size(); i++) {
+        // Print help
         if ((this->args[i] == string("-h")) || (this->args[i] == string("--help"))) {
-            return "TODO help.";
+            this->log->info("Help will be added in future.");
+            return false;
         }
+        // Verbose output
         if ((this->args[i] == string("-v")) || (this->args[i] == string("--verbose"))) {
             this->verbose = true;
+            this->log->setVerbose(true);
             continue;
         }
+        // Method
         if ((this->args[i] == string("-m")) || (this->args[i] == string("--method"))) {
-            if (this->args.size() < i + 2)
-                return string("Argument ") + this->args[i] + string(" needs a value.");
+            if (this->args.size() < i + 2) {
+                this->log->error(string("Argument ") + this->args[i] + string(" needs a value."));
+                return false;
+            }
             i += 1;
             if (this->args[i] == string("asuh")) {
                 this->method = ArgParse::AUTOCROP;
@@ -63,47 +73,69 @@ string ArgParse::parse() {
                 this->submethod = ArgParse::GLIMPSES_MAR;
                 continue;
             }
-            return string("Invalid method ") + this->args[i]
-                   + string(". Run with -h to show available methods.");
+            this->log->error(string("Invalid method ") + this->args[i]
+                   + string(". Run with -h to show available methods."));
+            return false;
         }
+        // Skip steps
         if ((this->args[i] == string("-s")) || (this->args[i] == string("--skip-if-exists"))) {
-            if (this->args.size() < i + 2)
-                return string("Argument ") + this->args[i] + string(" needs a value.");
+            if (this->args.size() < i + 2) {
+                this->log->error(string("Argument ") + this->args[i] + string(" needs a value."));
+                return false;
+            }
             i += 1;
             if (this->args[i] == string("g")) {
                 this->skip = ArgParse::SKIP_GLIMPSES;
                 continue;
             }
-            return string("Invalid value '") + this->args[i]
-                   + string("' for skip if exists argument.");
+            this->log->error(string("Invalid value '") + this->args[i]
+                   + string("' for skip if exists argument."));
+            return false;
         }
-        return string("Invalid argument ") + this->args[i] + string(".");
+        // Invalid argument
+        this->log->error(string("Invalid argument ") + this->args[i] + string("."));
+        return false;
     }
 
-    if (this->method == ArgParse::UNASSIGNED)
-        return "Parameter -m is required.";
+    // Check if method was chosen
+    if (this->method == ArgParse::UNASSIGNED) {
+        this->log->error("Parameter -m is required.");
+        return false;
+    }
 
-    return "";
+    return true;
 }
 
-string ArgParse::getInputs(vector<string> &input_paths) {
-    if (! fs::exists(ArgParse::INPUT_FOLDER))
-        return "Non-existent input folder.";
+bool ArgParse::getInputs(vector<string> &input_paths) {
+    // Check existence of input folder
+    if (! fs::exists(ArgParse::INPUT_FOLDER)) {
+        this->log->error("Non-existent input folder.");
+        return false;
+    }
 
-    if (fs::is_empty(ArgParse::INPUT_FOLDER))
-        return "Empty input folder.";
+    // Check if input folder contains any files
+    if (fs::is_empty(ArgParse::INPUT_FOLDER)) {
+        this->log->error("Empty input folder.");
+        return false;
+    }
 
+    // Loop through files
     for (auto file : fs::directory_iterator("data/input")) {
         string ext = file.path().extension().string();
+        // Check file type
         if ((ext == string(".mp4")) || (ext == string(".avi"))) {
             cv::VideoCapture test(file.path().string());
+            // Check if codecs are available and video can be opened
             if (test.isOpened())
                 input_paths.push_back(file.path());
         }
     }
 
-    if (input_paths.empty())
-        return "No valid video file in input folder.";
+    // Check if any video file found
+    if (input_paths.empty()) {
+        this->log->error("No valid video file in input folder.");
+        return false;
+    }
 
-    return "";
+    return true;
 }

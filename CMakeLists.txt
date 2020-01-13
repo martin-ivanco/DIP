@@ -4,8 +4,8 @@ project( auto360cam )
 
 find_package( OpenCV REQUIRED )
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 set( VLFEAT_INCLUDE_DIRS "external/vlfeat" )
 
@@ -34,4 +34,4 @@ external/vlfeat/vl/random.c
 external/vlfeat/vl/generic.c
 external/vlfeat/vl/slic.c )
 
-target_link_libraries( auto360cam ${OpenCV_LIBS} vlfeats)
+target_link_libraries( auto360cam ${OpenCV_LIBS} vlfeats ) # pthread stdc++fs - for older gcc

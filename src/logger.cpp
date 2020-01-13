@@ -5,12 +5,15 @@ namespace fs = std::filesystem;
 
 const string Logger::LOG_PATH = "data/output";
 
-Logger::Logger(bool verbose, bool file) {
-    this->verbose = verbose;
+Logger::Logger(bool file) {
     if (file) {
         fs::create_directories(Logger::LOG_PATH);
         this->file = ofstream(fs::path(Logger::LOG_PATH) / fs::path(this->getTime(true) + ".log"));
     }
+}
+
+void Logger::setVerbose(bool value) {
+    this->verbose = value;
 }
 
 void Logger::debug(string message) {

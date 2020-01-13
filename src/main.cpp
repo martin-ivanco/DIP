@@ -15,37 +15,37 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-    ArgParse arg(argc, argv);
-    string err = arg.parse();
-    if (! err.empty()) {
-        cerr << "ERROR: " << err << endl;
+    Logger log(true);
+    ArgParse arg(argc, argv, log);
+    if (! arg.parse()) 
         return 1;
-    }
-
-    Logger log(arg.verbose, true);
-    cv::Size size(Glimpses::WIDTH, Glimpses::HEIGHT);
 
     vector<string> input_paths;
-    err = arg.getInputs(input_paths);
-    if (! err.empty()) {
-        log.error(err);
+    if (! arg.getInputs(input_paths))
         return 1;
-    }
 
+    cv::Size size(Glimpses::WIDTH, Glimpses::HEIGHT);
     for (auto path : input_paths) {
         log.debug("Processing input path '" + path + "'.");
         Renderer renderer(path);
 
         if (arg.method == ArgParse::AUTOCROP) {
             log.debug("Using automatic cropping method.");
+            AutoCrop autoCrop(log);
             vector<tuple<double, double, double>> trajectory;
 
-            if (arg.submethod == ArgParse::AUTOCROP_SUH)
-                trajectory = AutoCrop(path, Saliency::ITTI).getPath();
-            if (arg.submethod == ArgParse::AUTOCROP_STE)
-                trajectory = AutoCrop(path, Saliency::STENTIFORD).getPath();
-            if (arg.submethod == ArgParse::AUTOCROP_FAN)
-                trajectory = AutoCrop(path, Saliency::MARGOLIN).getPath();
+            if (arg.submethod == ArgParse::AUTOCROP_SUH) {
+                if (! autoCrop.findTrajectory(trajectory, path, AutoCrop::SUH))
+                    return 3;
+            }
+            if (arg.submethod == ArgParse::AUTOCROP_STE) {
+                if (! autoCrop.findTrajectory(trajectory, path, AutoCrop::STENTIFORD))
+                    return 3;
+            }
+            if (arg.submethod == ArgParse::AUTOCROP_FAN) {
+                if (! autoCrop.findTrajectory(trajectory, path, AutoCrop::FANG))
+                    return 3;
+            }
 
             if (arg.submethod == ArgParse::AUTOCROP_360) {
                 log.error("Sorry, the 360 saliency method is not yet supported.");

@@ -8,12 +8,15 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 
+#include "logger.hpp"
+
 using namespace std;
 
 class ArgParse {
 
 private:
     vector<string> args;
+    Logger *log;
 
 public:
     static const string INPUT_FOLDER;
@@ -38,9 +41,9 @@ public:
     int submethod = UNASSIGNED;
     int skip = UNASSIGNED;
 
-    ArgParse(int argc, char **argv);
-    string parse();
-    string getInputs(vector<string> &input_paths);
+    ArgParse(int argc, char **argv, Logger &log);
+    bool parse();
+    bool getInputs(vector<string> &input_paths);
 
 };
 

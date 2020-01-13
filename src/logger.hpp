@@ -16,11 +16,12 @@ private:
 
     string getTime(bool date = false);
 
-    bool verbose;
+    bool verbose = false;
     ofstream file;
 
 public:
-    Logger(bool verbose = false, bool file = false);
+    Logger(bool file = false);
+    void setVerbose(bool value);
     void debug(string message);
     void info(string message);
     void warning(string message);

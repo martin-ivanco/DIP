@@ -4,6 +4,7 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 
+#include "logger.hpp"
 #include "saliency.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
@@ -18,18 +19,26 @@ class AutoCrop {
 
 private:
     static const string FANG_MODEL_PATH;
+    static const int STEP_RATIO = 100;
+    static const int RATIO_WIDTH = 16;
+    static const int RATIO_HEIGHT = 9;
+    static constexpr float STENTIFORD_MAX_ZOOM_FACTOR = 1.5f;
+    static constexpr float FANG_THRESHOLD = 0.6f;
 
-    vector<tuple<double, double, double>> path;
+    Logger *log;
 
-    cv::Mat getSaliencyMap(cv::Mat &frame, int type);
-    cv::Rect getROI(cv::Mat &frame, cv::Mat &saliency, int type);
-    tuple<double, double, double> getCoords(cv::Rect &roi);
-    void saveToFile(); // for development only
-    void loadFromFile(string filePath); // for development only
+    cv::Mat getSaliencyMap(cv::Mat &frame, int method);
+    cv::Rect getROI(cv::Mat &frame, cv::Mat &saliency, int method);
+    tuple<double, double, double> getCoords(cv::Mat &frame, cv::Rect &roi);
 
 public:
-    AutoCrop(string videoFilePath, int saliencyType);
-    vector<tuple<double, double, double>> getPath();
+    static const int FANG = 2;
+    static const int STENTIFORD = 0;
+    static const int SUH = 1;
+
+    AutoCrop(Logger &log);
+    bool findTrajectory(vector<tuple<double, double, double>> &trajectory, string videoFilePath,
+                        int method, int step = 1);
 
 };
 
