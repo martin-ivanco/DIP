@@ -2,6 +2,9 @@
 #define __GLIMPSES__
 
 #include <iostream>
+#include <string>
+#include <vector>
+#include <filesystem>
 
 #include "logger.hpp"
 #include "renderer.hpp"
@@ -14,10 +17,10 @@ class Glimpses {
 private:
     Logger *log;
     Renderer *renderer;
+    VideoInfo video;
+    filesystem::path folder;
     vector<VideoInfo> splits;
     vector<VideoInfo> glimpses;
-
-    void fillQuick(); // for development only
 
 public:
     static const int SPLIT_LENGTH = 5; // seconds
@@ -26,11 +29,12 @@ public:
     static const int WIDTH = 640;
     static const int HEIGHT = 360;
 
-    Glimpses(Renderer &renderer, Logger &log, bool skip_existing = false);
+    Glimpses(VideoInfo &video, Renderer &renderer, Logger &log);
+    bool render(bool skip_existing = false);
     int length();
     VideoInfo get(int index);
-    VideoInfo getOriginalVideo();
     int splitCount();
+    string videoName();
 
 };
 

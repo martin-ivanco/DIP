@@ -2,30 +2,34 @@
 
 using namespace std;
 
-Saliency::Saliency(Glimpses &glimpses, int saliencyType) 
-    : glimpses(glimpses), space(glimpses.splitCount()) {
-    // this->space.loadFromFile(); // for development only - skip salinecy
-    // return;
+Saliency::Saliency(Glimpses &glimpses, Logger &log) {
+    this->glimpses = &glimpses;
+    this->log = &log;
+}
 
-    if (saliencyType == Saliency::ITTI)
-        this->getSaliencyMap = this->getSaliencyMapItti;
-    if (saliencyType == Saliency::MARGOLIN)
-        this->getSaliencyMap = this->getSaliencyMapMargolin;
-    if (saliencyType == Saliency::STENTIFORD)
-        this->getSaliencyMap = this->getSaliencyMapStentiford;
-
-    VideoInfo g = VideoInfo("", 0, cv::Size(0, 0));
-    for (int i = 0; i < glimpses.length(); i++) {
-        g = this->glimpses.get(i);
-        this->space.set(g.split, g.phi, g.lambda, this->getGlimpseScoreQuick(g)); // for development only 
+bool Saliency::evaluate(ScoreSpace &space, int method) {
+    // Determininig the method to use
+    if (method == Saliency::ITTI)
+        this->log->info("Evaluating saliency of glimpses using method by Itti.");
+    else if (method == Saliency::MARGOLIN)
+        this->log->info("Evaluating saliency of glimpses using method by Margolin.");
+    else if (method == Saliency::STENTIFORD)
+        this->log->info("Evaluating saliency of glimpses using method by Stentiford.");
+    else {
+        this->log->error("Unknown saliency method.");
+        return false;
     }
+
+    VideoInfo g("", 0, cv::Size(0, 0));
+    for (int i = 0; i < this->glimpses->length(); i++) {
+        g = this->glimpses->get(i);
+        space.set(g.split, g.phi, g.lambda, this->getGlimpseScore(g, method));
+    }
+
+    return true;
 }
 
-ScoreSpace Saliency::getScoreSpace() {
-    return this->space;
-}
-
-double Saliency::getGlimpseScore(VideoInfo &glimpse) {
+double Saliency::getGlimpseScore(VideoInfo &glimpse, int method) {
     // TODO better median
     cv::VideoCapture video = cv::VideoCapture(glimpse.path);
     if (! video.isOpened())
@@ -37,7 +41,7 @@ double Saliency::getGlimpseScore(VideoInfo &glimpse) {
         video.read(frame);
         if (frame.empty())
             break;
-        scores.push_back(this->getFrameScore(frame));
+        scores.push_back(this->getFrameScore(frame, method));
     }
     sort(scores.begin(), scores.end());
     double result = scores[scores.size() / 2];
@@ -45,9 +49,9 @@ double Saliency::getGlimpseScore(VideoInfo &glimpse) {
     return result;
 }
 
-double Saliency::getFrameScore(cv::Mat &frame) {
+double Saliency::getFrameScore(cv::Mat &frame, int method) {
     // TODO median
-    cv::Mat saliencyMap = this->getSaliencyMap(frame);
+    cv::Mat saliencyMap = this->getSaliencyMap(frame, method);
     double sum = 0;
     for (int i = 0; i < Glimpses::HEIGHT; i++) {
         for (int j = 0; j < Glimpses::WIDTH; j++)
@@ -56,39 +60,23 @@ double Saliency::getFrameScore(cv::Mat &frame) {
     return sum / (Glimpses::WIDTH * Glimpses::HEIGHT);
 }
 
-cv::Mat Saliency::getSaliencyMapItti(cv::Mat &frame) {
-    SalMapItti itti = SalMapItti(frame);
-    return itti.salMap;
-}
-
-cv::Mat Saliency::getSaliencyMapMargolin(cv::Mat &frame) {
-    SalMapMargolin margolin = SalMapMargolin(frame);
-    return margolin.salMap;
-}
-
-cv::Mat Saliency::getSaliencyMapStentiford(cv::Mat &frame) {
-    SalMapStentiford stentiford = SalMapStentiford(frame);
-    stentiford.generateSalMap();
-    return stentiford.salMap;
-}
-
-// for development only
-double Saliency::getGlimpseScoreQuick(VideoInfo &glimpse) {
-    cv::VideoCapture video = cv::VideoCapture(glimpse.path);
-    if (! video.isOpened())
-        return 0;
-
-    double scoreSum = 0;
-    int counter = 0;
-    cv::Mat frame;
-
-    for (int i = 0; i < 2 * glimpse.fps; i++) {
-        video.read(frame);
+cv::Mat Saliency::getSaliencyMap(cv::Mat &frame, int method) {
+    if (method == Saliency::ITTI) {
+        SalMapItti itti(frame);
+        return itti.salMap;
     }
 
-    video.read(frame);
-    if (frame.empty())
-        return 0;
+    if (method == Saliency::MARGOLIN) {
+        SalMapMargolin margolin(frame);
+        return margolin.salMap;
+    }
 
-    return this->getFrameScore(frame);
+    if (method == Saliency::STENTIFORD) {
+        SalMapStentiford stentiford(frame);
+        stentiford.generateSalMap();
+        return stentiford.salMap;
+    }
+
+    this->log->error("Unexpected state in method Saliency::getSaliencyMap()!");
+    return cv::Mat();
 }

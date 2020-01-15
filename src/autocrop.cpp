@@ -21,10 +21,14 @@ bool AutoCrop::findTrajectory(vector<tuple<double, double, double>> &trajectory,
     // Determining the method to use
     if (method == AutoCrop::FANG)
         this->log->info("Using method by Fang.");
-    if (method == AutoCrop::STENTIFORD)
+    else if (method == AutoCrop::STENTIFORD)
         this->log->info("Using method by Stentiford.");
-    if (method == AutoCrop::SUH)
+    else if (method == AutoCrop::SUH)
         this->log->info("Using method by Suh.");
+    else {
+        this->log->error("Unknown AutoCrop method.");
+        return false;
+    }
 
     // Temporary variables
     cv::Mat frame;

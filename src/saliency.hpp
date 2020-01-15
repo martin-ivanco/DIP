@@ -4,8 +4,10 @@
 #include <iostream>
 #include <string>
 
+#include "logger.hpp"
 #include "glimpses.hpp"
 #include "scorespace.hpp"
+#include "videoinfo.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
 #include "../external/saliency/SalMapStentiford.h"
@@ -15,25 +17,21 @@ using namespace std;
 class Saliency {
 
 private:
-    Glimpses glimpses;
-    cv::Mat (* getSaliencyMap)(cv::Mat &);
-    ScoreSpace space;
+    Logger *log;
+    Glimpses *glimpses;
 
-    double getGlimpseScoreQuick(VideoInfo &glimpse);  // for development only
-    double getGlimpseScore(VideoInfo &glimpse);
-    double getFrameScore(cv::Mat &frame);
-
-    static cv::Mat getSaliencyMapItti(cv::Mat &frame);
-    static cv::Mat getSaliencyMapMargolin(cv::Mat &frame);
-    static cv::Mat getSaliencyMapStentiford(cv::Mat &frame);
+    // TODO refactor
+    double getGlimpseScore(VideoInfo &glimpse, int method);
+    double getFrameScore(cv::Mat &frame, int method);
+    cv::Mat getSaliencyMap(cv::Mat &frame, int method);
 
 public:
     static const int ITTI = 0;
     static const int MARGOLIN = 1;
     static const int STENTIFORD = 2;
 
-    Saliency(Glimpses &glimpses, int saliencyType);
-    ScoreSpace getScoreSpace();
+    Saliency(Glimpses &glimpses, Logger &log);
+    bool evaluate(ScoreSpace &space, int method);
 
 };
 

@@ -11,6 +11,7 @@
 #include "renderer.hpp"
 #include "saliency.hpp"
 #include "scorespace.hpp"
+#include "videoinfo.hpp"
 
 using namespace std;
 
@@ -24,15 +25,21 @@ int main(int argc, char **argv) {
     if (! arg.getInputs(input_paths))
         return 1;
 
-    cv::Size size(Glimpses::WIDTH, Glimpses::HEIGHT);
+    fs::path outputFolder = fs::path("data") / fs::path("output");
+    fs::create_directories(outputFolder);
+    Renderer renderer(log);
+    
     for (auto path : input_paths) {
         log.debug("Processing input path '" + path + "'.");
-        Renderer renderer(path);
+        VideoInfo input(path);
+        fs::path outputPath(outputFolder / fs::path(path).filename());
+        VideoInfo output(outputPath.string(), static_cast<double>(input.fps), input.size);
+        vector<tuple<double, double, double>> trajectory;
 
+        // Using standard automatic cropping
         if (arg.method == ArgParse::AUTOCROP) {
             log.debug("Using automatic cropping method.");
             AutoCrop autoCrop(log);
-            vector<tuple<double, double, double>> trajectory;
 
             if (arg.submethod == ArgParse::AUTOCROP_SUH) {
                 if (! autoCrop.findTrajectory(trajectory, path, AutoCrop::SUH))
@@ -51,35 +58,44 @@ int main(int argc, char **argv) {
                 log.error("Sorry, the 360 saliency method is not yet supported.");
                 return 2;
             }
-
-            renderer.renderPath(trajectory, size);
         }
 
+        // Using spatio-temporal glimpses
         if (arg.method == ArgParse::GLIMPSES) {
             log.debug("Using spatio-temporal glimpses method.");
-            Glimpses glimpses(renderer, log, arg.skip == ArgParse::SKIP_GLIMPSES);
-            vector<tuple<int, int>> trajectory;
+            Glimpses glimpses(input, renderer, log);
+            glimpses.render(arg.skip == ArgParse::SKIP_GLIMPSES);
 
+            // Using C3D features
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
                 log.warning("This method is incomplete. C3D will be generated.");
                 C3D c3d(glimpses, log);
+                return 2;
             }
+            // Using saliency mapping
+            else {
+                // Initializing saliency and score space
+                Saliency saliency(glimpses, log);
+                ScoreSpace space(glimpses.splitCount(), Glimpses::SPLIT_LENGTH * input.fps);
 
-            if (arg.submethod == ArgParse::GLIMPSES_ITT) {
-                Saliency sal(glimpses, Saliency::ITTI);
-                trajectory = sal.getScoreSpace().getBestPath();
-            }
-            if (arg.submethod == ArgParse::GLIMPSES_STE) {
-                Saliency sal(glimpses, Saliency::STENTIFORD);
-                trajectory = sal.getScoreSpace().getBestPath();
-            }
-            if (arg.submethod == ArgParse::GLIMPSES_MAR) {
-                Saliency sal(glimpses, Saliency::MARGOLIN);
-                trajectory = sal.getScoreSpace().getBestPath();
-            }
+                // Detremining saliency mapping method to use
+                int method = -1;
+                if (arg.submethod == ArgParse::GLIMPSES_ITT) method = Saliency::ITTI;
+                if (arg.submethod == ArgParse::GLIMPSES_MAR) method = Saliency::MARGOLIN;
+                if (arg.submethod == ArgParse::GLIMPSES_STE) method = Saliency::STENTIFORD;
+                if (method == -1) {
+                    log.error("Unknown saliency method.");
+                    return 3;
+                }
 
-            renderer.renderSplitPath(trajectory, Glimpses::PHIS, Glimpses::LAMBDAS, size, Glimpses::SPLIT_LENGTH);
+                // Evaluating saliency and then the best trajectory
+                if (! saliency.evaluate(space, method))
+                    return 3;
+                trajectory = space.getBestTrajectory();
+            }
         }
+
+        renderer.renderTrajectory(input, trajectory, output);
     }
 
     return 0;

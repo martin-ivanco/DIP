@@ -5,30 +5,38 @@ namespace fs = std::filesystem;
 
 const int Renderer::FOURCC = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
 
-Renderer::Renderer(string videoFilePath) : originalVideo(videoFilePath) {
-    this->folderPath = fs::path("data/glimpses") / this->originalVideo.name;
-    if ((! fs::exists(this->folderPath)) && (! fs::create_directories(this->folderPath)))
-        throw runtime_error("Could not create directory!");
+Renderer::Renderer(Logger &log) {
+    this->log = &log;
 }
 
-vector<VideoInfo> Renderer::splitVideo(int splitLength, bool skipExisting) {
+vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, int splitLength,
+                                       bool skipExisting) {
+    this->log->info("Splitting video '" + video.path + "'.");
     vector<VideoInfo> splits;
 
-    cv::VideoCapture video;
-    this->open(video, this->originalVideo.path);
+    // Opening input video
+    cv::VideoCapture reader;
+    this->open(reader, video.path);
     cv::Mat frame;
 
+    // Prepare for main loop
     cv::VideoWriter writer;
     bool finished = false;
-    while (! finished)
-    {
-        string splitPath = fs::path(this->folderPath) / this->getSplitName(splits.size());
-        VideoInfo split = VideoInfo(splitPath, static_cast<double>(this->originalVideo.fps), this->originalVideo.size);
+
+    // Main loop
+    while (! finished) {
+        // Preparing split info
+        string splitPath = fs::path(outputFolder) / this->getSplitName(splits.size());
+        VideoInfo split(splitPath, static_cast<double>(video.fps), video.size);
+
+        // Opening split output
         if ((! skipExisting) || (! fs::exists(splitPath)))
             this->open(writer, splitPath, split.fps, split.size);
+        this->log->debug("Generating split " + to_string(splits.size()) + ".");
 
-        for (int i = 0; i < this->originalVideo.fps * splitLength; i++) {
-            video.read(frame);
+        // Reading frames from input and writing to output for the length of split
+        for (int i = 0; i < video.fps * splitLength; i++) {
+            reader.read(frame);
             if (frame.empty()) {
                 finished = true;
                 break;
@@ -37,32 +45,49 @@ vector<VideoInfo> Renderer::splitVideo(int splitLength, bool skipExisting) {
                 writer.write(frame);
         }
 
+        // Closing split output
         if (writer.isOpened())
             writer.release();
+
         splits.push_back(split);
     }
 
-    this->close(video, writer);
+    // Closing all open videos
+    this->close(reader, writer);
     return splits;
 }
 
-vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> &videos, cv::Size &size, bool skipExisting) {
+vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outputFolder, int phi,
+                                         int lambda, cv::Size &viewSize, bool skipExisting) {
+    this->log->info("Composing views at phi=" + to_string(phi) + ", lambda=" + to_string(lambda)
+                    + ".");
     vector<VideoInfo> views;
-    auto [map1, map2] = this->getStereographicDisplacementMaps(phi, lambda, size);
-    cv::VideoCapture clip;
+
+    // Checking if input vector is non-empty
+    if (videos.size() < 1) {
+        this->log->warning("Empty vector of videos provided.");
+        return views;
+    }
+
+    // Preparing displacement maps and input/output variables
+    auto [map1, map2] = this->getStereographicDisplacementMaps(videos[0].size, viewSize, phi, lambda);
+    cv::VideoCapture reader;
     cv::Mat frame;
     cv::VideoWriter writer;
     cv::Mat warped;
 
+    // Main loop
     for (int i = 0; i < videos.size(); i++) {
-        this->open(clip, videos[i].path);
-        string viewPath = fs::path(this->folderPath) / this->getViewName(i, phi, lambda);
-        VideoInfo view = VideoInfo(viewPath, static_cast<double>(this->originalVideo.fps), size, i, phi, lambda);
+        // Opening input video and preparing view info
+        this->open(reader, videos[i].path);
+        string viewPath = fs::path(outputFolder) / this->getViewName(i, phi, lambda);
+        VideoInfo view(viewPath, static_cast<double>(videos[i].fps), viewSize, i, phi, lambda);
 
+        // Opening view output and remapping each frame of input video
         if ((! skipExisting) || (! fs::exists(viewPath))) {
             this->open(writer, viewPath, view.fps, view.size);
             while (true) {
-                if (! this->remapFrame(clip, writer, map1, map2, frame, warped))
+                if (! this->remapFrame(reader, writer, map1, map2, frame, warped))
                     break;
             }
         }
@@ -70,95 +95,57 @@ vector<VideoInfo> Renderer::composeViews(int phi, int lambda, vector<VideoInfo> 
         views.push_back(view);
     }
 
-    this->close(clip, writer);
+    // Closing all open videos
+    this->close(reader, writer);
     return views;
 }
 
-VideoInfo Renderer::renderSplitPath(vector<tuple<int, int>> &path, const vector<int> &phis, const vector<int> &lambdas, cv::Size &size, int splitLength) {
-    cv::VideoCapture video;
-    this->open(video, this->originalVideo.path);
-    
-    cv::VideoWriter writer;
-    string outputPath = fs::path(this->folderPath) / "output.mp4";
-    VideoInfo output = VideoInfo(outputPath, static_cast<double>(this->originalVideo.fps), size);
-    this->open(writer, outputPath, output.fps, output.size);
-
-    auto [map1, map2] = this->getStereographicDisplacementMaps(phis[get<0>(path[0])], lambdas[get<1>(path[0])], size);
+VideoInfo Renderer::renderTrajectory(VideoInfo &input,
+                                     vector<tuple<double, double, double>> &trajectory,
+                                     VideoInfo &output) {
+    // Opening input and output videos
+    cv::VideoCapture reader;
+    this->open(reader, input.path);
     cv::Mat frame;
     cv::Mat warped;
-    
-    for (int i = 0; i < (splitLength / 2.0) * originalVideo.fps; i++) {
-        if (! this->remapFrame(video, writer, map1, map2, frame, warped))
-            throw runtime_error("Video shorter than expected.");
-    }
-
-    for (int s = 1; s < path.size(); s++) {
-        int startPhi = phis[get<0>(path[s - 1])];
-        int startLambda = lambdas[get<1>(path[s - 1])];
-        int diffPhi = phis[get<0>(path[s])] - startPhi;
-        int diffLambda = lambdas[get<1>(path[s])] - startLambda;
-        double progress = 0;
-
-        for (int i = 0; i < splitLength * originalVideo.fps; i++) {
-            if ((diffPhi != 0) || (diffLambda != 0)) {
-                progress = static_cast<double>(i) / (splitLength * originalVideo.fps);
-                tie(map1, map2) = this->getStereographicDisplacementMaps(progress * diffPhi + startPhi, progress * diffLambda + startLambda, size);
-            }
-
-            if (! this->remapFrame(video, writer, map1, map2, frame, warped))
-                throw runtime_error("Video shorter than expected.");
-        }
-    }
-
-    tie(map1, map2) = this->getStereographicDisplacementMaps(phis[get<0>(path[path.size() - 1])], lambdas[get<1>(path[path.size() - 1])], size);
-
-    while (true) {
-        if (! this->remapFrame(video, writer, map1, map2, frame, warped))
-            break;
-    }
-    
-    this->close(video, writer);
-    return output;
-}
-
-VideoInfo Renderer::renderPath(vector<tuple<double, double, double>> &path, cv::Size &size) {
-    cv::VideoCapture video;
-    this->open(video, this->originalVideo.path);
-    
     cv::VideoWriter writer;
-    string outputPath = fs::path(this->folderPath) / "output.mp4";
-    VideoInfo output = VideoInfo(outputPath, static_cast<double>(this->originalVideo.fps), size);
-    this->open(writer, outputPath, output.fps, output.size);
+    this->open(writer, output.path, output.fps, output.size);
 
-    cv::Mat frame;
-    cv::Mat warped;
-    for (int i = 0; i < path.size(); i++) {
-        auto [map1, map2] = this->getStereographicDisplacementMaps(get<0>(path[0]), get<1>(path[0]), size, get<2>(path[0]));
-        if (! this->remapFrame(video, writer, map1, map2, frame, warped))
+    // Main loop - remap each frame using trajectory coordinates
+    for (int i = 0; i < trajectory.size(); i++) {
+        auto [map1, map2] = this->getStereographicDisplacementMaps(input.size, output.size,
+                                                                   get<0>(trajectory[i]), 
+                                                                   get<1>(trajectory[i]),
+                                                                   get<2>(trajectory[i]));
+        if (! this->remapFrame(reader, writer, map1, map2, frame, warped))
             throw runtime_error("Video shorter than expected.");
     }
     
-    this->close(video, writer);
+    // Closing all open videos
+    this->close(reader, writer);
     return output;
 }
 
 string Renderer::getSplitName(int timeBlock) {
     char buffer[100];
-    sprintf (buffer, "%s_g%.4d.mp4", this->originalVideo.name.c_str(), timeBlock);
+    sprintf (buffer, "s%.4d.mp4", timeBlock);
     return string(buffer);
 }
 
 string Renderer::getViewName(int timeBlock, int phi, int lambda) {
     char buffer[100];
-    sprintf (buffer, "%s_g%.4d_h%.3d_v%.3d.mp4", this->originalVideo.name.c_str(), timeBlock, lambda, phi);
+    sprintf (buffer, "s%.4d_l%.3d_p%.3d.mp4", timeBlock, lambda, phi);
     return string(buffer);
 }
 
-tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(double phi, double lambda, cv::Size &size, double aov) {
-    cv::Mat mapLam = cv::Mat(size.height, size.width, CV_32FC1);
-    cv::Mat mapPhi = cv::Mat(size.height, size.width, CV_32FC1);
-    int h = size.height / 2;
-    int w = size.width / 2;
+tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(cv::Size &sourceSize,
+                                                                   cv::Size &projectionSize,
+                                                                   double phi, double lambda,
+                                                                   double aov) {
+    cv::Mat mapLam = cv::Mat(projectionSize.height, projectionSize.width, CV_32FC1);
+    cv::Mat mapPhi = cv::Mat(projectionSize.height, projectionSize.width, CV_32FC1);
+    int h = projectionSize.height / 2;
+    int w = projectionSize.width / 2;
     double phi1 = this->deg2rad(phi);
     double lam0 = this->deg2rad(lambda);
     double R = w / tan(aov / 360 * CV_PI) / 2;
@@ -169,8 +156,8 @@ tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(double phi, d
         for (int x = -w; x < w; x++) {
             double ro = sqrt(x * x + y * y);
             if (ro == 0) {
-                mapPhi.at<float>(y + h, x + w) = static_cast<float>(this->originalVideo.height / 2.0 - 0.5);
-                mapLam.at<float>(y + h, x + w) = static_cast<float>(this->originalVideo.width / 2.0 - 0.5);
+                mapPhi.at<float>(y + h, x + w) = static_cast<float>(sourceSize.height / 2.0 - 0.5);
+                mapLam.at<float>(y + h, x + w) = static_cast<float>(sourceSize.width / 2.0 - 0.5);
                 continue;
             }
             double c = 2 * atan(ro / (2 * R));
@@ -187,14 +174,14 @@ tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(double phi, d
             if (pow(x, 2) + pow(y - mSy, 2) > pow(mR, 2))
                 rLam += CV_PI;
 
-            auto [erpY, erpX] = this->rad2erp(rPhi, rLam);
+            auto [erpY, erpX] = this->rad2erp(sourceSize, rPhi, rLam);
             mapPhi.at<float>(y + h, x + w) = static_cast<float>(erpY);
             mapLam.at<float>(y + h, x + w) = static_cast<float>(erpX);
         }
     }
 
-    cv::Mat map1 = cv::Mat(size.height, size.width, CV_16SC2);
-    cv::Mat map2 = cv::Mat(size.height, size.width, CV_16UC1);
+    cv::Mat map1 = cv::Mat(projectionSize.height, projectionSize.width, CV_16SC2);
+    cv::Mat map2 = cv::Mat(projectionSize.height, projectionSize.width, CV_16UC1);
     cv::convertMaps(mapLam, mapPhi, map1, map2, CV_16SC2);
     return {map1, map2};
 }
@@ -203,11 +190,11 @@ double Renderer::deg2rad(double deg) {
     return deg / 180.0 * CV_PI;
 }
 
-tuple<double, double> Renderer::rad2erp(double phi, double lambda) {
+tuple<double, double> Renderer::rad2erp(cv::Size planeSize, double phi, double lambda) {
     phi += CV_PI / 2;
     lambda = fmod(lambda + CV_PI, 2 * CV_PI);
     lambda = lambda < 0 ? lambda + 2 * CV_PI : lambda;
-    return {phi / CV_PI * this->originalVideo.height, lambda / (2 * CV_PI) * this->originalVideo.width};
+    return {phi / CV_PI * planeSize.height, lambda / (2 * CV_PI) * planeSize.width};
 }
 
 bool Renderer::remapFrame(cv::VideoCapture &capture, cv::VideoWriter &writer, cv::Mat &map1, cv::Mat &map2, cv::Mat &frame, cv::Mat &warped) {
@@ -236,9 +223,4 @@ void Renderer::close(cv::VideoCapture &capture, cv::VideoWriter &writer) {
         writer.release();
     if (capture.isOpened())
         capture.release();
-}
-
-// for development only
-VideoInfo Renderer::getVideoInfo() {
-    return originalVideo;
 }

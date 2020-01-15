@@ -33,6 +33,7 @@ private:
     void extract();
 
 public:
+    // TODO refactor
     C3D(Glimpses &glimpses, Logger &log);
 
 };

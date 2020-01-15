@@ -37,8 +37,7 @@ public:
     static const int SUH = 1;
 
     AutoCrop(Logger &log);
-    bool findTrajectory(vector<tuple<double, double, double>> &trajectory, string videoFilePath,
-                        int method, int step = 1);
+    bool findTrajectory(vector<tuple<double, double, double>> &trajectory, string videoFilePath, int method, int step = 1);
 
 };
 

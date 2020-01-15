@@ -26,7 +26,7 @@ void C3D::prepare() {
     ofstream input_list(this->c3d_path / fs::path(C3D::INPUT_LIST_NAME));
     ofstream output_prefix(this->c3d_path / fs::path(C3D::OUTPUT_PREFIX_NAME));
 
-    fs::path video_path = this->c3d_path / fs::path(this->glimpses->getOriginalVideo().name);
+    fs::path video_path = this->c3d_path / fs::path(this->glimpses->videoName());
     fs::create_directories(video_path);
 
     char prefix_buffer[16];

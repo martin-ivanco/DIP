@@ -2,7 +2,7 @@
 
 using namespace std;
 
-ScoreSpace::ScoreSpace(int splitCount) {
+ScoreSpace::ScoreSpace(int splitCount, int splitLength) {
     this->space = vector<vector<vector<double>>>(splitCount,
         vector<vector<double>>(LENGTH(Glimpses::PHIS), vector<double>(LENGTH(Glimpses::LAMBDAS))));
     this->accumulator = vector<vector<vector<Trace>>>(splitCount,
@@ -25,8 +25,8 @@ void ScoreSpace::set(int time, int phi, int lambda, double score) {
     this->space[time][phiIndex][lambdaIndex] = score;
 }
 
-vector<tuple<int, int>> ScoreSpace::getBestPath() {
-    vector<tuple<int, int>> path(this->space.size(), make_tuple(0, 0));
+vector<tuple<double, double, double>> ScoreSpace::getBestTrajectory() {
+    vector<tuple<double, double, double>> trajectory(this->space.size() * this->splitLength, make_tuple(0, 0, 0));
     
     // Initialization - scores from first time split
     for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
@@ -51,7 +51,7 @@ vector<tuple<int, int>> ScoreSpace::getBestPath() {
     for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
         for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
             if (bestEnd.score < this->accumulator[this->space.size() - 1][p][l].score) {
-                path[this->space.size() - 1] = make_tuple(p, l);
+                trajectory[this->space.size() * this->splitLength - ((this->splitLength + 1) / 2)] = make_tuple(p, l, ScoreSpace::AOV);
                 bestEnd = this->accumulator[this->space.size() - 1][p][l];
             }
         }
@@ -60,12 +60,13 @@ vector<tuple<int, int>> ScoreSpace::getBestPath() {
     // Backtracking - find the path that leads to the best score
     Trace pTrace = bestEnd;
     for (int t = this->space.size() - 2; t >= 0; t--) {
-        path[t]= make_tuple(pTrace.phi, pTrace.lambda);
+        trajectory[t * this->splitLength + this->splitLength / 2] = make_tuple(pTrace.phi, pTrace.lambda, ScoreSpace::AOV);
         pTrace = this->accumulator[t][pTrace.phi][pTrace.lambda];
     }
 
-    this->saveToFile(); // for development only
-    return path;
+    // this->saveToFile(); // for development only
+    this->interpolate(trajectory);
+    return trajectory;
 }
 
 Trace ScoreSpace::findBestAncestor(int time, int phi, int lambda) {
@@ -85,6 +86,32 @@ Trace ScoreSpace::findBestAncestor(int time, int phi, int lambda) {
     }
 
     return t;
+}
+
+void ScoreSpace::interpolate(vector<tuple<double, double, double>> &trajectory) {
+    // Copying the first point on the trajectory to fill the beginning
+    int startIndex = this->splitLength / 2;
+    int endIndex;
+    for (int i = 0; i < this->splitLength / 2; i++)
+        trajectory[i] = trajectory[startIndex];
+
+    // Main loop - linarly interpolating between each neighbouring pair of points
+    for (int i = 0; i < this->space.size() - 1; i++) {
+        endIndex = startIndex + this->splitLength;
+        tuple<double, double, double> s = trajectory[startIndex];
+        tuple<double, double, double> e = trajectory[endIndex];
+        for (int j = startIndex + 1; j < endIndex; j++) {
+            double r = static_cast<double>(j - startIndex) / this->splitLength;
+            trajectory[j] = make_tuple((1 - r) * get<0>(s) + r * get<0>(e),
+                                       (1 - r) * get<1>(s) + r * get<1>(e),
+                                       (1 - r) * get<2>(s) + r * get<2>(e));
+        }
+        startIndex = endIndex;
+    }
+    
+    // Copying the last point on the trajectory to fill the end
+    for (int i = endIndex + 1; i < trajectory.size(); i++)
+        trajectory[i] = trajectory[endIndex];
 }
 
 // for development only
