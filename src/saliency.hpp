@@ -20,9 +20,7 @@ private:
     Logger *log;
     Glimpses *glimpses;
 
-    // TODO refactor
-    double getGlimpseScore(VideoInfo &glimpse, int method);
-    double getFrameScore(cv::Mat &frame, int method);
+    double getGlimpseScore(VideoInfo &glimpse, int method, bool saveSaliency);
     cv::Mat getSaliencyMap(cv::Mat &frame, int method);
 
 public:
@@ -31,7 +29,7 @@ public:
     static const int STENTIFORD = 2;
 
     Saliency(Glimpses &glimpses, Logger &log);
-    bool evaluate(ScoreSpace &space, int method);
+    bool evaluate(ScoreSpace &space, int method, bool saveSaliency = false);
 
 };
 
