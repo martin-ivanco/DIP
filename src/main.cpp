@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
         log.debug("Processing input path '" + path + "'.");
         VideoInfo input(path);
         fs::path outputPath(outputFolder / fs::path(path).filename());
-        VideoInfo output(outputPath.string(), static_cast<double>(input.fps), input.size);
+        VideoInfo output(outputPath.string(), 0, static_cast<double>(input.fps), input.size);
         vector<tuple<double, double, double>> trajectory;
 
         // Using standard automatic cropping

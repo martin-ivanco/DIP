@@ -16,40 +16,52 @@ C3D::C3D(Glimpses &glimpses, Logger &log) {
     this->glimpses = &glimpses;
     this->log = &log;
 
-    this->c3d_path = fs::path("data") / fs::path("c3d");
-    fs::create_directories(this->c3d_path);
+    // Checking if main C3D output directory exists
+    this->c3dPath = fs::path("data") / fs::path("c3d");
+    fs::create_directories(this->c3dPath);
     this->prepare();
-    this->extract();
 }
 
 void C3D::prepare() {
-    ofstream input_list(this->c3d_path / fs::path(C3D::INPUT_LIST_NAME));
-    ofstream output_prefix(this->c3d_path / fs::path(C3D::OUTPUT_PREFIX_NAME));
+    this->log->info("Preparing folders and lists for C3D feature extraction.");
 
-    fs::path video_path = this->c3d_path / fs::path(this->glimpses->videoName());
-    fs::create_directories(video_path);
+    // Opening input and output lists for C3D feature extraction
+    ofstream inputList(this->c3dPath / fs::path(C3D::INPUT_LIST_NAME));
+    ofstream outputPrefix(this->c3dPath / fs::path(C3D::OUTPUT_PREFIX_NAME));
 
-    char prefix_buffer[16];
+    // Creating C3D output directory for input video
+    fs::path videoPath = this->c3dPath / fs::path(this->glimpses->videoName());
+    fs::create_directories(videoPath);
+
+    // Creating C3D output subdirectories for each glimpse
+    char prefixBuffer[16];
+    int glimpseSegmentCount = 0;
     for (int i = 0; i < this->glimpses->length(); i++) {
-        fs::path glimpse_path = this->glimpses->get(i).path;
-        fs::path glimpse_features_directory = video_path / fs::path(this->glimpses->get(i).name);
-        fs::create_directories(glimpse_features_directory);
+        fs::path glimpsePath = this->glimpses->get(i).path;
+        fs::path glimpseFeaturesDirectory = videoPath / fs::path(this->glimpses->get(i).name);
+        fs::create_directories(glimpseFeaturesDirectory);
 
-        for (int j = 0; j < C3D::SEGMENT_COUNT; j++) {
-            input_list << glimpse_path.string() << " " << to_string(j * C3D::SEGMENT_LENGTH) << " 0" << endl;
-            sprintf(prefix_buffer, "%03d", j * C3D::SEGMENT_LENGTH);
-            output_prefix << (glimpse_features_directory / fs::path(prefix_buffer)).string() << endl;
+        // Adding the glimpse to the lists
+        glimpseSegmentCount = this->glimpses->get(i).length / C3D::SEGMENT_LENGTH;
+        for (int j = 0; j < glimpseSegmentCount; j++) {
+            inputList << glimpsePath.string() << " " << to_string(j * C3D::SEGMENT_LENGTH)
+                       << " 0" << endl;
+            sprintf(prefixBuffer, "%03d", j * C3D::SEGMENT_LENGTH);
+            outputPrefix << (glimpseFeaturesDirectory / fs::path(prefixBuffer)).string()
+                          << endl;
         }
+        this->segmentCount += glimpseSegmentCount;
     }
 }
 
 void C3D::extract() {
+    this->log->info("Extracting C3D features.");
+
+    // Extracting C3D features
     string command = C3D::GLOG_CMD + " " + C3D::EXTRACTOR_PATH + " " + C3D::PROTOTXT_PATH + " "
                      + C3D::MODEL_PATH + " " + C3D::GPU_ID + " " + to_string(C3D::BATCH_SIZE)
-                     + " " + to_string((this->glimpses->length() * C3D::SEGMENT_COUNT
-                                       + C3D::BATCH_SIZE - 1) / C3D::BATCH_SIZE) + " "
-                     + (this->c3d_path / fs::path(C3D::OUTPUT_PREFIX_NAME)).string() + " "
+                     + " " + to_string((this->segmentCount + C3D::BATCH_SIZE - 1) / C3D::BATCH_SIZE)
+                     + " " + (this->c3dPath / fs::path(C3D::OUTPUT_PREFIX_NAME)).string() + " "
                      + C3D::FEATURES;
-    this->log->debug("Extracting C3D features using command '" + command + "'.");
     system(command.c_str());
 }

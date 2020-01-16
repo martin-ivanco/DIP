@@ -21,7 +21,7 @@ bool Saliency::evaluate(ScoreSpace &space, int method, bool saveSaliency) {
     }
 
     // Looping over glimpses and evaluating each one
-    VideoInfo g("", 0, cv::Size(0, 0));
+    VideoInfo g("", 0, 0, cv::Size(0, 0));
     double score = 0;
     for (int i = 0; i < this->glimpses->length(); i++) {
         g = this->glimpses->get(i);

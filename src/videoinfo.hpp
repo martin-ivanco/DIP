@@ -13,6 +13,7 @@ struct VideoInfo {
     string path;
     string folder;
     string name;
+    int length; // frames
     int fps;
     int width;
     int height;
@@ -22,7 +23,7 @@ struct VideoInfo {
     int lambda = 0;
 
     VideoInfo(string path, int split = 0, int phi = 0, int lambda = 0);
-    VideoInfo(string path, int fps, const cv::Size &size, int split = 0, int phi = 0, int lambda = 0);
+    VideoInfo(string path, int length, int fps, const cv::Size &size, int split = 0, int phi = 0, int lambda = 0);
 };
 
 #endif // __VIDEOINFO__

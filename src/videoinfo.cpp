@@ -17,6 +17,7 @@ VideoInfo::VideoInfo(string path, int split, int phi, int lambda) {
     if (! video.isOpened())
         throw runtime_error("Could not open input video!");
     
+    this->length = static_cast<int>(round(video.get(cv::CAP_PROP_FRAME_COUNT)));
     this->fps = static_cast<int>(round(video.get(cv::CAP_PROP_FPS)));
     this->width = static_cast<int>(round(video.get(cv::CAP_PROP_FRAME_WIDTH)));
     this->height = static_cast<int>(round(video.get(cv::CAP_PROP_FRAME_HEIGHT)));
@@ -29,12 +30,13 @@ VideoInfo::VideoInfo(string path, int split, int phi, int lambda) {
         video.release();
 }
 
-VideoInfo::VideoInfo(string path, int fps, const cv::Size &size, int split, int phi, int lambda) {
+VideoInfo::VideoInfo(string path, int length, int fps, const cv::Size &size, int split, int phi, int lambda) {
     this->path = path;
     fs::path p = fs::path(this->path);
     this->folder = p.parent_path();
     this->name = p.stem();
 
+    this->length = length;
     this->fps = fps;
     this->width = size.width;
     this->height = size.height;

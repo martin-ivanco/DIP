@@ -27,7 +27,7 @@ vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, in
     while (! finished) {
         // Preparing split info
         string splitPath = fs::path(outputFolder) / this->getSplitName(splits.size());
-        VideoInfo split(splitPath, static_cast<double>(video.fps), video.size);
+        VideoInfo split(splitPath, 0, static_cast<double>(video.fps), video.size);
 
         // Opening split output
         if ((! skipExisting) || (! fs::exists(splitPath)))
@@ -35,7 +35,8 @@ vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, in
         this->log->debug("Generating split " + to_string(splits.size()) + ".");
 
         // Reading frames from input and writing to output for the length of split
-        for (int i = 0; i < video.fps * splitLength; i++) {
+        int i = 0;
+        for (; i < video.fps * splitLength; i++) {
             reader.read(frame);
             if (frame.empty()) {
                 finished = true;
@@ -44,6 +45,7 @@ vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, in
             if (writer.isOpened())
                 writer.write(frame);
         }
+        split.length = i;
 
         // Closing split output
         if (writer.isOpened())
@@ -81,7 +83,7 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
         // Opening input video and preparing view info
         this->open(reader, videos[i].path);
         string viewPath = fs::path(outputFolder) / this->getViewName(i, phi, lambda);
-        VideoInfo view(viewPath, static_cast<double>(videos[i].fps), viewSize, i, phi, lambda);
+        VideoInfo view(viewPath, videos[i].length, static_cast<double>(videos[i].fps), viewSize, i, phi, lambda);
 
         // Opening view output and remapping each frame of input video
         if ((! skipExisting) || (! fs::exists(viewPath))) {
@@ -112,14 +114,18 @@ VideoInfo Renderer::renderTrajectory(VideoInfo &input,
     this->open(writer, output.path, output.fps, output.size);
 
     // Main loop - remap each frame using trajectory coordinates
-    for (int i = 0; i < trajectory.size(); i++) {
+    int i = 0;
+    for (; i < trajectory.size(); i++) {
         auto [map1, map2] = this->getStereographicDisplacementMaps(input.size, output.size,
                                                                    get<0>(trajectory[i]), 
                                                                    get<1>(trajectory[i]),
                                                                    get<2>(trajectory[i]));
-        if (! this->remapFrame(reader, writer, map1, map2, frame, warped))
-            throw runtime_error("Video shorter than expected.");
+        if (! this->remapFrame(reader, writer, map1, map2, frame, warped)) {
+            this->log->error("Video shorter than expected.");
+            break;
+        }
     }
+    output.length = i;
     
     // Closing all open videos
     this->close(reader, writer);
