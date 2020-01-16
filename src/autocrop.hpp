@@ -6,6 +6,7 @@
 
 #include "logger.hpp"
 #include "saliency.hpp"
+#include "trajectory.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
 #include "../external/saliency/SalMapStentiford.h"
@@ -29,7 +30,7 @@ private:
 
     cv::Mat getSaliencyMap(cv::Mat &frame, int method);
     cv::Rect getROI(cv::Mat &frame, cv::Mat &saliency, int method);
-    tuple<double, double, double> getCoords(cv::Mat &frame, cv::Rect &roi);
+    tPoint getCoords(cv::Mat &frame, cv::Rect &roi);
 
 public:
     static const int FANG = 2;
@@ -37,7 +38,7 @@ public:
     static const int SUH = 1;
 
     AutoCrop(Logger &log);
-    bool findTrajectory(vector<tuple<double, double, double>> &trajectory, string videoFilePath, int method, int step = 1);
+    bool findTrajectory(Trajectory &trajectory, string videoFilePath, int method, int step = 1);
 
 };
 

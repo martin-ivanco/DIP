@@ -11,11 +11,12 @@
 #include <opencv2/videoio.hpp>
 
 #include "logger.hpp"
+#include "trajectory.hpp"
 #include "videoinfo.hpp"
 
 using namespace std;
 
-class Renderer { // TODO Refactor
+class Renderer {
 
 private:
     static const int FOURCC;
@@ -36,7 +37,7 @@ public:
     Renderer(Logger &log);
     vector<VideoInfo> splitVideo(VideoInfo &video, string outputFolder, int splitLength, bool skipExisting = false);
     vector<VideoInfo> composeViews(vector<VideoInfo> &videos, string outputFolder, int phi, int lambda, cv::Size &viewSize, bool skipExisting = false);
-    VideoInfo renderTrajectory(VideoInfo &video, vector<tuple<double, double, double>> &trajectory, VideoInfo &output);
+    VideoInfo renderTrajectory(VideoInfo &video, Trajectory &trajectory, VideoInfo &output);
 
 };
 

@@ -9,6 +9,7 @@
 #include <tuple>
 
 #include "glimpses.hpp"
+#include "trajectory.hpp"
 
 using namespace std;
 
@@ -35,7 +36,7 @@ private:
 public:
     ScoreSpace(int splitCount, int splitLength);
     void set(int time, int phi, int lambda, double score);
-    vector<tuple<double, double, double>> getBestTrajectory();
+    bool findTrajectory(Trajectory &trajectory);
     
     void loadFromFile(); // for development only
 };

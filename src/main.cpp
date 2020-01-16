@@ -11,6 +11,7 @@
 #include "renderer.hpp"
 #include "saliency.hpp"
 #include "scorespace.hpp"
+#include "trajectory.hpp"
 #include "videoinfo.hpp"
 
 using namespace std;
@@ -30,15 +31,15 @@ int main(int argc, char **argv) {
     Renderer renderer(log);
     
     for (auto path : input_paths) {
-        log.debug("Processing input path '" + path + "'.");
+        log.info("Processing input path '" + path + "'.");
         VideoInfo input(path);
         fs::path outputPath(outputFolder / fs::path(path).filename());
         VideoInfo output(outputPath.string(), 0, static_cast<double>(input.fps), input.size);
-        vector<tuple<double, double, double>> trajectory;
+        Trajectory trajectory(log, input.length);
 
         // Using standard automatic cropping
         if (arg.method == ArgParse::AUTOCROP) {
-            log.debug("Using automatic cropping method.");
+            log.info("Using automatic cropping method.");
             AutoCrop autoCrop(log);
 
             if (arg.submethod == ArgParse::AUTOCROP_SUH) {
@@ -62,7 +63,7 @@ int main(int argc, char **argv) {
 
         // Using spatio-temporal glimpses
         if (arg.method == ArgParse::GLIMPSES) {
-            log.debug("Using spatio-temporal glimpses method.");
+            log.info("Using spatio-temporal glimpses method.");
             Glimpses glimpses(input, renderer, log);
             glimpses.render(arg.skip == ArgParse::SKIP_GLIMPSES);
 
@@ -88,10 +89,11 @@ int main(int argc, char **argv) {
                     return 3;
                 }
 
-                // Evaluating saliency and then the best trajectory
+                // Evaluating saliency and finding the best trajectory
                 if (! saliency.evaluate(space, method))
                     return 3;
-                trajectory = space.getBestTrajectory();
+                if (! space.findTrajectory(trajectory))
+                    return 3;
             }
         }
 

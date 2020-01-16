@@ -72,7 +72,8 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
     }
 
     // Preparing displacement maps and input/output variables
-    auto [map1, map2] = this->getStereographicDisplacementMaps(videos[0].size, viewSize, phi, lambda);
+    auto [map1, map2] = this->getStereographicDisplacementMaps(videos[0].size, viewSize, phi,
+                                                               lambda);
     cv::VideoCapture reader;
     cv::Mat frame;
     cv::VideoWriter writer;
@@ -83,7 +84,8 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
         // Opening input video and preparing view info
         this->open(reader, videos[i].path);
         string viewPath = fs::path(outputFolder) / this->getViewName(i, phi, lambda);
-        VideoInfo view(viewPath, videos[i].length, static_cast<double>(videos[i].fps), viewSize, i, phi, lambda);
+        VideoInfo view(viewPath, videos[i].length, static_cast<double>(videos[i].fps), viewSize, i,
+                                                                       phi, lambda);
 
         // Opening view output and remapping each frame of input video
         if ((! skipExisting) || (! fs::exists(viewPath))) {
@@ -102,9 +104,7 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
     return views;
 }
 
-VideoInfo Renderer::renderTrajectory(VideoInfo &input,
-                                     vector<tuple<double, double, double>> &trajectory,
-                                     VideoInfo &output) {
+VideoInfo Renderer::renderTrajectory(VideoInfo &input, Trajectory &trajectory, VideoInfo &output) {
     // Opening input and output videos
     cv::VideoCapture reader;
     this->open(reader, input.path);
@@ -115,11 +115,11 @@ VideoInfo Renderer::renderTrajectory(VideoInfo &input,
 
     // Main loop - remap each frame using trajectory coordinates
     int i = 0;
-    for (; i < trajectory.size(); i++) {
+    for (; i < trajectory.length(); i++) {
         auto [map1, map2] = this->getStereographicDisplacementMaps(input.size, output.size,
-                                                                   get<0>(trajectory[i]), 
-                                                                   get<1>(trajectory[i]),
-                                                                   get<2>(trajectory[i]));
+                                                                   trajectory[i].phi,
+                                                                   trajectory[i].lambda,
+                                                                   trajectory[i].aov);
         if (! this->remapFrame(reader, writer, map1, map2, frame, warped)) {
             this->log->error("Video shorter than expected.");
             break;
@@ -203,7 +203,8 @@ tuple<double, double> Renderer::rad2erp(cv::Size planeSize, double phi, double l
     return {phi / CV_PI * planeSize.height, lambda / (2 * CV_PI) * planeSize.width};
 }
 
-bool Renderer::remapFrame(cv::VideoCapture &capture, cv::VideoWriter &writer, cv::Mat &map1, cv::Mat &map2, cv::Mat &frame, cv::Mat &warped) {
+bool Renderer::remapFrame(cv::VideoCapture &capture, cv::VideoWriter &writer,
+                          cv::Mat &map1, cv::Mat &map2, cv::Mat &frame, cv::Mat &warped) {
     capture.read(frame);
     if (frame.empty())
         return false;

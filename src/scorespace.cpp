@@ -25,9 +25,7 @@ void ScoreSpace::set(int time, int phi, int lambda, double score) {
     this->space[time][phiIndex][lambdaIndex] = score;
 }
 
-vector<tuple<double, double, double>> ScoreSpace::getBestTrajectory() {
-    vector<tuple<double, double, double>> trajectory(this->space.size() * this->splitLength, make_tuple(0, 0, 0));
-    
+bool ScoreSpace::findTrajectory(Trajectory &trajectory) {    
     // Initialization - scores from first time split
     for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
         for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
@@ -51,7 +49,7 @@ vector<tuple<double, double, double>> ScoreSpace::getBestTrajectory() {
     for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
         for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
             if (bestEnd.score < this->accumulator[this->space.size() - 1][p][l].score) {
-                trajectory[this->space.size() * this->splitLength - ((this->splitLength + 1) / 2)] = make_tuple(p, l, ScoreSpace::AOV);
+                trajectory[this->space.size() * this->splitLength - ((this->splitLength + 1) / 2)] = tPoint(p, l, ScoreSpace::AOV);
                 bestEnd = this->accumulator[this->space.size() - 1][p][l];
             }
         }
@@ -60,13 +58,12 @@ vector<tuple<double, double, double>> ScoreSpace::getBestTrajectory() {
     // Backtracking - find the path that leads to the best score
     Trace pTrace = bestEnd;
     for (int t = this->space.size() - 2; t >= 0; t--) {
-        trajectory[t * this->splitLength + this->splitLength / 2] = make_tuple(pTrace.phi, pTrace.lambda, ScoreSpace::AOV);
+        trajectory[t * this->splitLength + this->splitLength / 2] = tPoint(pTrace.phi, pTrace.lambda, ScoreSpace::AOV);
         pTrace = this->accumulator[t][pTrace.phi][pTrace.lambda];
     }
 
     // this->saveToFile(); // for development only
-    this->interpolate(trajectory);
-    return trajectory;
+    return trajectory.interpolate(this->splitLength);
 }
 
 Trace ScoreSpace::findBestAncestor(int time, int phi, int lambda) {

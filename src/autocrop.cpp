@@ -8,9 +8,7 @@ AutoCrop::AutoCrop(Logger &log) {
     this->log = &log;
 }
 
-bool AutoCrop::findTrajectory(vector<tuple<double, double, double>> &trajectory,
-                              string videoFilePath, int method, int step) {
-    
+bool AutoCrop::findTrajectory(Trajectory &trajectory, string videoFilePath, int method, int step) {
     // Opening input video
     cv::VideoCapture video = cv::VideoCapture(videoFilePath);
     if (! video.isOpened()) {
@@ -42,10 +40,10 @@ bool AutoCrop::findTrajectory(vector<tuple<double, double, double>> &trajectory,
 
         saliencyMap = this->getSaliencyMap(frame, method);
         roi = this->getROI(frame, saliencyMap, method);
-        trajectory.push_back(this->getCoords(frame, roi));
+        trajectory[i] = this->getCoords(frame, roi);
 
         // Skip (step - 1) frames
-        for (int j = 0; j < step; j++){
+        for (int j = 0; j < step - 1; j++){
             video.read(frame);
             i++;
         }
@@ -111,11 +109,11 @@ cv::Rect AutoCrop::getROI(cv::Mat &frame, cv::Mat &saliency, int method) {
     return cv::Rect();
 }
 
-tuple<double, double, double> AutoCrop::getCoords(cv::Mat &frame, cv::Rect &roi) {
+tPoint AutoCrop::getCoords(cv::Mat &frame, cv::Rect &roi) {
     this->log->debug("Getting spherical coordinates.");
 
     // Count spherical coordinates from center of the cropping window and its width
     double lam = (roi.x + roi.width / 2.0) * (2 * CV_PI) / frame.size().width;
     double phi = (roi.y + roi.height / 2.0)* CV_PI / frame.size().height;
-    return {phi - CV_PI / 2, lam - CV_PI, roi.width / frame.size().width * 360};
+    return tPoint(phi - CV_PI / 2, lam - CV_PI, roi.width / frame.size().width * 360);
 }
