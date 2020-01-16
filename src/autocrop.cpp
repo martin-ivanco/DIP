@@ -47,6 +47,8 @@ bool AutoCrop::findTrajectory(Trajectory &trajectory, string videoFilePath, int 
             video.read(frame);
             i++;
         }
+
+        video.read(frame);
     }
 
     return true;
@@ -113,7 +115,7 @@ tPoint AutoCrop::getCoords(cv::Mat &frame, cv::Rect &roi) {
     this->log->debug("Getting spherical coordinates.");
 
     // Count spherical coordinates from center of the cropping window and its width
-    double lam = (roi.x + roi.width / 2.0) * (2 * CV_PI) / frame.size().width;
-    double phi = (roi.y + roi.height / 2.0)* CV_PI / frame.size().height;
-    return tPoint(phi - CV_PI / 2, lam - CV_PI, roi.width / frame.size().width * 360);
+    return tPoint(static_cast<double>(roi.y + roi.height / 2.0) / frame.size().height * 180 - 90,
+                  static_cast<double>(roi.x + roi.width / 2.0) / frame.size().width * 360 - 180,
+                  static_cast<double>(roi.width) / frame.size().width * 360);
 }

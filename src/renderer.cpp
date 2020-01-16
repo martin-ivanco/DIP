@@ -105,6 +105,7 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
 }
 
 VideoInfo Renderer::renderTrajectory(VideoInfo &input, Trajectory &trajectory, VideoInfo &output) {
+    this->log->info("Rendering video '" + output.path + "'.");
     // Opening input and output videos
     cv::VideoCapture reader;
     this->open(reader, input.path);
@@ -154,7 +155,8 @@ tuple<cv::Mat, cv::Mat> Renderer::getStereographicDisplacementMaps(cv::Size &sou
     int w = projectionSize.width / 2;
     double phi1 = this->deg2rad(phi);
     double lam0 = this->deg2rad(lambda);
-    double R = w / tan(aov / 360 * CV_PI) / 2;
+    double alpha = this->deg2rad(aov) / 2;
+    double R = (projectionSize.width * (1 + cos(alpha))) / (4 * sin(alpha));
     double mSy = - 2 * R * tan(phi1);
     double mR = 2 * R / (cos(phi1) * sin(CV_PI / 2));
 

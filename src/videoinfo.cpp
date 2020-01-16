@@ -7,7 +7,7 @@ VideoInfo::VideoInfo(string path, int split, int phi, int lambda) {
     this->path = path;
 
     fs::path p = fs::path(this->path);
-    if ((p.extension().compare(".mp4") != 0) || (! fs::exists(p)))
+    if (! fs::exists(p))
         throw invalid_argument("Video file path invalid!");
 
     this->folder = p.parent_path();

@@ -65,3 +65,20 @@ tPoint &Trajectory::operator[](size_t idx) {
     this->path.push_back(tPoint(0, 0, 0));
     return this->path[this->path.size() - 1];
 }
+
+void Trajectory::save(string path) { // development
+    this->log->debug("Saving trajectory to file '" + path + "'.");
+    ofstream file(path);
+    for (int i = 0; i < this->path.size(); i++) {
+        file << this->path[i].phi << " " << this->path[i].lambda << " " << this->path[i].aov
+             << endl;
+    }
+}
+
+void Trajectory::load(string path) { // development
+    this->log->debug("Loading trajectory from file '" + path + "'.");
+    ifstream file(path);
+    for (int i = 0; i < this->path.size(); i++) {
+        file >> this->path[i].phi >> this->path[i].lambda >> this->path[i].aov;
+    }
+}

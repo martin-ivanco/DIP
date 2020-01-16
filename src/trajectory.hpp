@@ -2,6 +2,7 @@
 #define __TRAJECTORY__
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 #include "logger.hpp"
@@ -45,6 +46,9 @@ public:
     bool interpolate(int splitLength);
     int length();
     tPoint &operator[](size_t idx);
+
+    void save(string path); // development
+    void load(string path); // development
 
 };
 
