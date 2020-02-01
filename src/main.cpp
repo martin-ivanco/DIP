@@ -65,7 +65,9 @@ int main(int argc, char **argv) {
         if (arg.method == ArgParse::GLIMPSES) {
             log.info("Using spatio-temporal glimpses method.");
             Glimpses glimpses(input, renderer, log);
-            glimpses.render(arg.skip == ArgParse::SKIP_GLIMPSES);
+
+            // Coarse search
+            glimpses.renderCoarse(arg.skip & ArgParse::SKIP_GLIMPSES);
 
             // Using C3D features
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
@@ -77,7 +79,49 @@ int main(int argc, char **argv) {
             else {
                 // Initializing saliency and score space
                 Saliency saliency(glimpses, log);
-                ScoreSpace space(glimpses.splitCount(), Glimpses::SPLIT_LENGTH * input.fps);
+                ScoreSpace space(glimpses.splitCount(), log);
+
+                // Detremining saliency mapping method to use
+                int method = -1;
+                if (arg.submethod == ArgParse::GLIMPSES_ITT) method = Saliency::ITTI;
+                if (arg.submethod == ArgParse::GLIMPSES_MAR) method = Saliency::MARGOLIN;
+                if (arg.submethod == ArgParse::GLIMPSES_STE) method = Saliency::STENTIFORD;
+                if (method == -1) {
+                    log.error("Unknown saliency method.");
+                    return 3;
+                }
+
+                // Evaluating saliency and finding the best trajectory
+                if (arg.skip & ArgParse::SKIP_SALIENCY) {
+                    space.load(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
+                }
+                else {
+                    if (! saliency.evaluate(space, method))
+                        return 3;
+                    space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
+                }
+                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * 2 * input.fps,
+                                           Glimpses::ANGLE_EPS * 2))
+                    return 3;
+                space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
+                trajectory.save(fs::path("data") / fs::path("output") / fs::path("coarse_trajectory.txt")); // for development only
+            }
+                
+            // Dense search
+            glimpses.clear();
+            glimpses.renderDense(trajectory, arg.skip & ArgParse::SKIP_GLIMPSES);
+
+            // Using C3D features
+            if (arg.submethod == ArgParse::GLIMPSES_C3D) {
+                log.warning("This method is incomplete. C3D will be generated.");
+                C3D c3d(glimpses, log);
+                return 2;
+            }
+            // Using saliency mapping
+            else {
+                // Initializing saliency and score space
+                Saliency saliency(glimpses, log);
+                ScoreSpace space(glimpses.splitCount(), log);
 
                 // Detremining saliency mapping method to use
                 int method = -1;
@@ -92,8 +136,12 @@ int main(int argc, char **argv) {
                 // Evaluating saliency and finding the best trajectory
                 if (! saliency.evaluate(space, method))
                     return 3;
-                if (! space.findTrajectory(trajectory))
+                space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt")); // for development only
+                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * input.fps,
+                                           Glimpses::ANGLE_EPS))
                     return 3;
+                space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt")); // for development only
+                trajectory.save(fs::path("data") / fs::path("output") / fs::path("dense_trajectory.txt")); // for development only
             }
         }
 

@@ -26,9 +26,9 @@ bool Saliency::evaluate(ScoreSpace &space, int method, bool saveSaliency) {
     for (int i = 0; i < this->glimpses->length(); i++) {
         g = this->glimpses->get(i);
         score = this->getGlimpseScore(g, method, saveSaliency);
-        space.set(g.split, g.phi, g.lambda, score);
         this->log->debug("Glimpse " + to_string(i) + " of " + to_string(this->glimpses->length())
                          + " scored: " + to_string(score) + ".");
+        space.set(g.split, g.phi, g.lambda, g.aov, score);
     }
 
     return true;
@@ -45,19 +45,27 @@ double Saliency::getGlimpseScore(VideoInfo &glimpse, int method, bool saveSalien
     // Getting saliency map of each frame
     cv::Mat frame;
     cv::Mat saliency;
-    vector<float> values;
+    vector<float> values(Glimpses::HEIGHT * Glimpses::WIDTH * video.get(cv::CAP_PROP_FRAME_COUNT));
+    int offset = 0;
     while (true) {
         video.read(frame);
         if (frame.empty())
             break;
 
         saliency = this->getSaliencyMap(frame, method);
+        if ((saliency.rows != Glimpses::HEIGHT) || (saliency.cols != Glimpses::WIDTH)) {
+            this->log->error("Unexpected size of saliency map " + to_string(saliency.rows) + "x"
+                             + to_string(saliency.cols) + ".");
+            return 0;
+        }
 
         // Adding each value to the list
         for (int i = 0; i < Glimpses::HEIGHT; i++) {
             for (int j = 0; j < Glimpses::WIDTH; j++)
-                values.push_back(saliency.at<float>(i, j));
+                values[offset + i * Glimpses::WIDTH + j] = saliency.at<float>(i, j);
         }
+
+        offset += Glimpses::HEIGHT * Glimpses::WIDTH;
     }
 
     // Finding median
@@ -72,8 +80,14 @@ cv::Mat Saliency::getSaliencyMap(cv::Mat &frame, int method) {
     }
 
     if (method == Saliency::MARGOLIN) {
-        SalMapMargolin margolin(frame, true);
-        return margolin.salMap;
+        try {
+            SalMapMargolin margolin(frame, true);
+            return margolin.salMap;
+        }
+        catch(...) {
+            this->log->warning("Exception in getting saliency map by Margolin!");
+            return cv::Mat(Glimpses::HEIGHT, Glimpses::WIDTH, CV_32FC1);
+        }
     }
 
     if (method == Saliency::STENTIFORD) {

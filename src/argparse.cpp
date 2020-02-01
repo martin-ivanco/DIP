@@ -85,7 +85,11 @@ bool ArgParse::parse() {
             }
             i += 1;
             if (this->args[i] == string("g")) {
-                this->skip = ArgParse::SKIP_GLIMPSES;
+                this->skip |= ArgParse::SKIP_GLIMPSES;
+                continue;
+            }
+            if (this->args[i] == string("s")) {
+                this->skip |= ArgParse::SKIP_SALIENCY;
                 continue;
             }
             this->log->error(string("Invalid value '") + this->args[i]

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cmath>
 
 #include "logger.hpp"
 
@@ -40,6 +41,8 @@ class Trajectory {
 private:
     Logger *log;
     vector<tPoint> path;
+
+    tPoint between(tPoint &start, tPoint &end, double ratio);
 
 public:
     Trajectory(Logger &log, int length);

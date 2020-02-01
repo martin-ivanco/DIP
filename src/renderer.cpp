@@ -3,7 +3,11 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-const int Renderer::FOURCC = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
+#ifdef __APPLE__
+    const int Renderer::FOURCC = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
+#else
+    const int Renderer::FOURCC = 0x21;
+#endif
 
 Renderer::Renderer(Logger &log) {
     this->log = &log;
@@ -27,7 +31,7 @@ vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, in
     while (! finished) {
         // Preparing split info
         string splitPath = fs::path(outputFolder) / this->getSplitName(splits.size());
-        VideoInfo split(splitPath, 0, static_cast<double>(video.fps), video.size);
+        VideoInfo split(splitPath, 0, static_cast<double>(video.fps), video.size, splits.size());
 
         // Opening split output
         if ((! skipExisting) || (! fs::exists(splitPath)))
@@ -59,10 +63,11 @@ vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, in
     return splits;
 }
 
-vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outputFolder, int phi,
-                                         int lambda, cv::Size &viewSize, bool skipExisting) {
+vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outputFolder,
+                                         double phi, double lambda, double aov, cv::Size &viewSize,
+                                         bool skipExisting) {
     this->log->info("Composing views at phi=" + to_string(phi) + ", lambda=" + to_string(lambda)
-                    + ".");
+                    + ", aov=" + to_string(aov) + ".");
     vector<VideoInfo> views;
 
     // Checking if input vector is non-empty
@@ -73,7 +78,7 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
 
     // Preparing displacement maps and input/output variables
     auto [map1, map2] = this->getStereographicDisplacementMaps(videos[0].size, viewSize, phi,
-                                                               lambda);
+                                                               lambda, aov);
     cv::VideoCapture reader;
     cv::Mat frame;
     cv::VideoWriter writer;
@@ -85,7 +90,7 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
         this->open(reader, videos[i].path);
         string viewPath = fs::path(outputFolder) / this->getViewName(i, phi, lambda);
         VideoInfo view(viewPath, videos[i].length, static_cast<double>(videos[i].fps), viewSize, i,
-                                                                       phi, lambda);
+                                                                       phi, lambda, aov);
 
         // Opening view output and remapping each frame of input video
         if ((! skipExisting) || (! fs::exists(viewPath))) {
@@ -218,13 +223,13 @@ bool Renderer::remapFrame(cv::VideoCapture &capture, cv::VideoWriter &writer,
 void Renderer::open(cv::VideoCapture &capture, string filename) {
     capture.open(filename);
     if (! capture.isOpened())
-        throw runtime_error("Could not open input video!");
+        throw runtime_error("Could not open input video '" + filename + "'!");
 }
 
 void Renderer::open(cv::VideoWriter &writer, string filename, int fps, cv::Size &size) {
     writer.open(filename, Renderer::FOURCC, fps, size);
     if (! writer.isOpened())
-        throw runtime_error("Could not write video!");
+        throw runtime_error("Could not write video'" + filename + "'!");
 }
 
 void Renderer::close(cv::VideoCapture &capture, cv::VideoWriter &writer) {

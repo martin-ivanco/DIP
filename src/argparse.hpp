@@ -34,12 +34,13 @@ public:
     static const int GLIMPSES_STE = 2;
     static const int GLIMPSES_MAR = 3;
 
-    static const int SKIP_GLIMPSES = 0;
+    static const int SKIP_GLIMPSES = 1;
+    static const int SKIP_SALIENCY = 2;
 
     bool verbose = false;
     int method = UNASSIGNED;
     int submethod = UNASSIGNED;
-    int skip = UNASSIGNED;
+    int skip = 0;
 
     ArgParse(int argc, char **argv, Logger &log);
     bool parse();

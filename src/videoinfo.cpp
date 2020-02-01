@@ -3,7 +3,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-VideoInfo::VideoInfo(string path, int split, int phi, int lambda) {
+VideoInfo::VideoInfo(string path, int split, double phi, double lambda, double aov) {
     this->path = path;
 
     fs::path p = fs::path(this->path);
@@ -25,12 +25,13 @@ VideoInfo::VideoInfo(string path, int split, int phi, int lambda) {
     this->split = split;
     this->phi = phi;
     this->lambda = lambda;
+    this->aov = aov;
 
     if (video.isOpened())
         video.release();
 }
 
-VideoInfo::VideoInfo(string path, int length, int fps, const cv::Size &size, int split, int phi, int lambda) {
+VideoInfo::VideoInfo(string path, int length, int fps, const cv::Size &size, int split, double phi, double lambda, double aov) {
     this->path = path;
     fs::path p = fs::path(this->path);
     this->folder = p.parent_path();
@@ -44,4 +45,5 @@ VideoInfo::VideoInfo(string path, int length, int fps, const cv::Size &size, int
     this->split = split;
     this->phi = phi;
     this->lambda = lambda;
+    this->aov = aov;
 }

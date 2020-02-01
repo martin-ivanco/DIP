@@ -2,55 +2,84 @@
 
 using namespace std;
 
-ScoreSpace::ScoreSpace(int splitCount, int splitLength) {
-    this->space = vector<vector<vector<double>>>(splitCount,
-        vector<vector<double>>(LENGTH(Glimpses::PHIS), vector<double>(LENGTH(Glimpses::LAMBDAS))));
-    this->accumulator = vector<vector<vector<Trace>>>(splitCount,
-        vector<vector<Trace>>(LENGTH(Glimpses::PHIS), vector<Trace>(LENGTH(Glimpses::LAMBDAS))));
+ScoreSpace::ScoreSpace(int splitCount, Logger &log) {
+    this->log = &log;
+    this->log->debug("Creating score space of size " + to_string(splitCount) + "x"
+                     + to_string(Glimpses::PHIS.size()) + "x" + to_string(Glimpses::LAMBDAS.size())
+                     + "x" + to_string(Glimpses::AOVS.size()) + ".");
+    this->space = vector<vector<vector<vector<double>>>>(
+        splitCount, vector<vector<vector<double>>>(
+            Glimpses::PHIS.size(), vector<vector<double>>(
+                Glimpses::LAMBDAS.size(), vector<double>(
+                    Glimpses::AOVS.size()))));
+    this->accumulator = vector<vector<vector<vector<Trace>>>>(
+        splitCount, vector<vector<vector<Trace>>>(
+            Glimpses::PHIS.size(), vector<vector<Trace>>(
+                Glimpses::LAMBDAS.size(), vector<Trace>(
+                    Glimpses::AOVS.size()))));
+    
 }
 
-void ScoreSpace::set(int time, int phi, int lambda, double score) {
-    int phiIndex = 0;
-    if (phi == Glimpses::PHIS[1]) phiIndex = 1;
-    if (phi == Glimpses::PHIS[2]) phiIndex = 2;
-    if (phi == Glimpses::PHIS[3]) phiIndex = 3;
-    if (phi == Glimpses::PHIS[4]) phiIndex = 4;
-    if (phi == Glimpses::PHIS[5]) phiIndex = 5;
-    if (phi == Glimpses::PHIS[6]) phiIndex = 6;
-    if (phi == Glimpses::PHIS[7]) phiIndex = 7;
-    if (phi == Glimpses::PHIS[8]) phiIndex = 8;
-    if (phi == Glimpses::PHIS[9]) phiIndex = 9;
-    if (phi == Glimpses::PHIS[10]) phiIndex = 10;
-    int lambdaIndex = (lambda + 180) / 20;
-    this->space[time][phiIndex][lambdaIndex] = score;
+void ScoreSpace::set(int time, int phi, int lambda, double aov, double score) {
+    // Find phi index
+    int phiIndex = -1;
+    for (int i = 0; i < Glimpses::PHIS.size(); i++) {
+        if (phi == Glimpses::PHIS[i])
+            phiIndex = i;
+    }
+
+    // Compute lambda index
+    int lambdaIndex = (lambda + 160) / 20;
+
+    // Find aov index
+    int aovIndex = -1;
+    for (int i = 0; i < Glimpses::AOVS.size(); i++) {
+        if (abs(aov - Glimpses::AOVS[i]) < 0.001)
+            aovIndex = i;
+    }
+
+    this->log->debug("Placing score " + to_string(score) + " at position [" + to_string(time)
+                     + ", " + to_string(phiIndex) + ", " + to_string(lambdaIndex) + ", "
+                     + to_string(aovIndex) + "].");
+    this->space[time][phiIndex][lambdaIndex][aovIndex] = score;
 }
 
-bool ScoreSpace::findTrajectory(Trajectory &trajectory) {    
+bool ScoreSpace::findTrajectory(Trajectory &trajectory, int splitLength, double angleEps) {    
     // Initialization - scores from first time split
-    for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
-        for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
-            this->accumulator[0][p][l] = Trace {-1, -1, this->space[0][p][l]};
+    for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+        for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+            for (int a = 0; a < Glimpses::AOVS.size(); a++) {
+                this->accumulator[0][p][l][a] = Trace(-1, -1, -1, this->space[0][p][l][a]);
+            }
         }
     }
 
     // Main section - find best ancestor and add score
     for (int t = 1; t < this->space.size(); t++) {
-        for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
-            for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
-                Trace a = this->findBestAncestor(t, p, l);
-                this->accumulator[t][p][l] = 
-                    Trace {a.phi, a.lambda, a.score + this->space[t][p][l]};
+        for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+            for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+                for (int a = 0; a < Glimpses::AOVS.size(); a++) {
+                    Trace trace = this->findBestAncestor(t, p, l, a, angleEps);
+                    this->accumulator[t][p][l][a] = Trace(trace.phi, trace.lambda, trace.aov,
+                                                          trace.score + this->space[t][p][l][a]);
+                }
             }
         }
     }
 
     // Finding the best score in the final time split
-    Trace bestEnd = {-1, -1, 0};
-    for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
-        for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
-            if (bestEnd.score < this->accumulator[this->space.size() - 1][p][l].score) {
-                trajectory[this->space.size() * this->splitLength - ((this->splitLength + 1) / 2)] = tPoint(p, l, ScoreSpace::AOV);
-                bestEnd = this->accumulator[this->space.size() - 1][p][l];
+    Trace bestEnd;
+    int endIndex = (this->space.size() - 1) * splitLength;
+    endIndex += trajectory.length() % splitLength == 0 ? splitLength / 2
+                                                       : (trajectory.length() % splitLength) / 2;
+    for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+        for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+            for (int a = 0; a < Glimpses::AOVS.size(); a++) {
+                if (bestEnd.score < this->accumulator[this->space.size() - 1][p][l][a].score) {
+                    trajectory[endIndex] = tPoint(Glimpses::PHIS[p], Glimpses::LAMBDAS[l],
+                                                  Glimpses::AOVS[a]);
+                    bestEnd = this->accumulator[this->space.size() - 1][p][l][a];
+                }
             }
         }
     }
@@ -58,94 +87,76 @@ bool ScoreSpace::findTrajectory(Trajectory &trajectory) {
     // Backtracking - find the path that leads to the best score
     Trace pTrace = bestEnd;
     for (int t = this->space.size() - 2; t >= 0; t--) {
-        trajectory[t * this->splitLength + this->splitLength / 2] = tPoint(pTrace.phi, pTrace.lambda, ScoreSpace::AOV);
-        pTrace = this->accumulator[t][pTrace.phi][pTrace.lambda];
+        trajectory[t * splitLength + splitLength / 2] = tPoint(
+            Glimpses::PHIS[pTrace.phi], Glimpses::LAMBDAS[pTrace.lambda], Glimpses::AOVS[pTrace.aov]);
+        pTrace = this->accumulator[t][pTrace.phi][pTrace.lambda][pTrace.aov];
     }
 
-    // this->saveToFile(); // for development only
-    return trajectory.interpolate(this->splitLength);
+    return trajectory.interpolate(splitLength);
 }
 
-Trace ScoreSpace::findBestAncestor(int time, int phi, int lambda) {
-    Trace t = {-1, -1, 0};
+Trace ScoreSpace::findBestAncestor(int time, int phi, int lambda, int aov, double epsilon) {
+    Trace t;
 
-    // Find the best score in previous layer with close phi and lambda
-    for (int p = -1; p < 2; p++) {
-        if ((phi + p >= 0) && (phi + p < LENGTH(Glimpses::PHIS))) {
-            for (int l = -1; l < 2; l++) {
-                if ((lambda + l >= 0) && (lambda + l < LENGTH(Glimpses::LAMBDAS))) {
-                    if (t.score <= this->accumulator[time - 1][phi + p][lambda + l].score)
-                        t = {phi + p, lambda + l,
-                            this->accumulator[time - 1][phi + p][lambda + l].score};
-                }
+    // Find the best score in previous layer with close phi, lambda and aov
+    for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+        if (abs(Glimpses::PHIS[phi] - Glimpses::PHIS[p]) > epsilon)
+            continue;
+        for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+            int diff = abs((Glimpses::LAMBDAS[lambda] - Glimpses::LAMBDAS[l] + 180) % 360) - 180;
+            if (abs(diff) > epsilon)
+                continue;
+            for (int a = 0; a < Glimpses::AOVS.size(); a++) {
+                if (t.score < this->accumulator[time - 1][p][l][a].score)
+                    t = Trace(p, l, a, this->accumulator[time - 1][p][l][a].score);
             }
-        } 
+        }
     }
 
     return t;
 }
 
-void ScoreSpace::interpolate(vector<tuple<double, double, double>> &trajectory) {
-    // Copying the first point on the trajectory to fill the beginning
-    int startIndex = this->splitLength / 2;
-    int endIndex;
-    for (int i = 0; i < this->splitLength / 2; i++)
-        trajectory[i] = trajectory[startIndex];
-
-    // Main loop - linarly interpolating between each neighbouring pair of points
-    for (int i = 0; i < this->space.size() - 1; i++) {
-        endIndex = startIndex + this->splitLength;
-        tuple<double, double, double> s = trajectory[startIndex];
-        tuple<double, double, double> e = trajectory[endIndex];
-        for (int j = startIndex + 1; j < endIndex; j++) {
-            double r = static_cast<double>(j - startIndex) / this->splitLength;
-            trajectory[j] = make_tuple((1 - r) * get<0>(s) + r * get<0>(e),
-                                       (1 - r) * get<1>(s) + r * get<1>(e),
-                                       (1 - r) * get<2>(s) + r * get<2>(e));
-        }
-        startIndex = endIndex;
-    }
-    
-    // Copying the last point on the trajectory to fill the end
-    for (int i = endIndex + 1; i < trajectory.size(); i++)
-        trajectory[i] = trajectory[endIndex];
-}
-
 // for development only
-void ScoreSpace::saveToFile() {
-    ofstream file1("../Playground/space1.txt");
+void ScoreSpace::save(string path) {
+    ofstream file(path);
+    file << "SPACE" << "\n";
     for (int s = 0; s < this->space.size(); s++) {
-        for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
-            for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
-                file1 << this->space[s][p][l] << "\t ";
+        for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+            for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+                for (int a = 0; a < Glimpses::AOVS.size(); a++)
+                    file << this->space[s][p][l][a] << " ";
+                file << "\t ";
             }
-            file1 << "\n";
+            file << "\n";
         }
-        file1 << "\n\n\n";
+        file << "\n\n\n";
     }
-    ofstream file2("../Playground/accumulator.txt");
+
+    file << "ACCUMULATOR" << "\n";
     for (int s = 0; s < this->space.size(); s++) {
-        for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
-            for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
-                file2 << this->accumulator[s][p][l].score << "\t ";
+        for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+            for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+                for (int a = 0; a < Glimpses::AOVS.size(); a++)
+                    file << this->accumulator[s][p][l][a].score << " ";
+                file << "\t ";
             }
-            file2 << "\n";
+            file << "\n";
         }
-        file2 << "\n\n\n";
+        file << "\n\n\n";
     }
 }
 
 // for development only
-void ScoreSpace::loadFromFile() {
-    ifstream file1("../Playground/space.txt");
-    if (! file1.is_open())
-        throw runtime_error("Could not open score space file.");
+void ScoreSpace::load(string path) {
+    ifstream file(path);
+    string temp;
 
-    char temp;
+    file >> temp; // SPACE
     for (int s = 0; s < this->space.size(); s++) {
-        for (int p = 0; p < LENGTH(Glimpses::PHIS); p++) {
-            for (int l = 0; l < LENGTH(Glimpses::LAMBDAS); l++) {
-                file1 >> this->space[s][p][l];
+        for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+            for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+                for (int a = 0; a < Glimpses::AOVS.size(); a++)
+                    file >> this->space[s][p][l][a];
             }
         }
     }

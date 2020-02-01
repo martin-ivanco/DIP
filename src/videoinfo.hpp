@@ -19,11 +19,12 @@ struct VideoInfo {
     int height;
     cv::Size size;
     int split = 0;
-    int phi = 0;
-    int lambda = 0;
+    double phi = 0;
+    double lambda = 0;
+    double aov = 0;
 
-    VideoInfo(string path, int split = 0, int phi = 0, int lambda = 0);
-    VideoInfo(string path, int length, int fps, const cv::Size &size, int split = 0, int phi = 0, int lambda = 0);
+    VideoInfo(string path, int split = 0, double phi = 0, double lambda = 0, double aov = 0);
+    VideoInfo(string path, int length, int fps, const cv::Size &size, int split = 0, double phi = 0, double lambda = 0, double aov = 0);
 };
 
 #endif // __VIDEOINFO__

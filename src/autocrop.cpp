@@ -2,7 +2,7 @@
 
 using namespace std;
 
-const string AutoCrop::FANG_MODEL_PATH = "../external/crop/models/Trained_model21.yml";
+const string AutoCrop::FANG_MODEL_PATH = "external/crop/models/Trained_model21.yml";
 
 AutoCrop::AutoCrop(Logger &log) {
     this->log = &log;

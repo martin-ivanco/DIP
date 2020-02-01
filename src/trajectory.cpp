@@ -30,8 +30,8 @@ bool Trajectory::interpolate(int splitLength) {
     for (int i = 0; i < this->path.size() / splitLength - 1; i++) {
         endIndex = startIndex + splitLength;
         for (int j = startIndex + 1; j < endIndex; j++) {
-            double r = static_cast<double>(j - startIndex) / splitLength;
-            this->path[j] = (this->path[startIndex] * (1 - r)) + (this->path[endIndex] * r);
+            this->path[j] = this->between(this->path[startIndex], this->path[endIndex],
+                                          static_cast<double>(j - startIndex) / splitLength);
         }
         startIndex = endIndex;
     }
@@ -39,10 +39,10 @@ bool Trajectory::interpolate(int splitLength) {
     // If the size isn't divisible by split length, doing one more iteration
     int modulo = this->path.size() % splitLength;
     if (modulo != 0) {
-        endIndex += (splitLength + modulo) / 2;
+        endIndex = startIndex + (splitLength + modulo) / 2;
         for (int j = startIndex + 1; j < endIndex; j++) {
-            double r = static_cast<double>(j - startIndex) / splitLength;
-            this->path[j] = (this->path[startIndex] * (1 - r)) + (this->path[endIndex] * r);
+            this->path[j] = this->between(this->path[startIndex], this->path[endIndex],
+                                          static_cast<double>(j - startIndex) / splitLength);
         }
     }
     
@@ -64,6 +64,19 @@ tPoint &Trajectory::operator[](size_t idx) {
                      + to_string(this->path.size()) + "). Appending a point and returning it.");
     this->path.push_back(tPoint(0, 0, 0));
     return this->path[this->path.size() - 1];
+}
+
+tPoint Trajectory::between(tPoint &start, tPoint &end, double ratio) {
+    // Compute new lambda
+    double lambda_diff = abs(fmod(end.lambda - start.lambda + 180, 360)) - 180;
+    if ((abs(end.lambda - start.lambda) > 180) && (end.lambda < start.lambda))
+        lambda_diff *= -1;
+    double new_lambda = start.lambda + lambda_diff * ratio;
+    if (new_lambda <= -180) new_lambda += 360;
+    if (new_lambda > 180) new_lambda -= 360;
+    
+    return tPoint(start.phi * (1 - ratio) + end.phi * ratio, new_lambda,
+                  start.aov * (1 - ratio) + end.aov * ratio);
 }
 
 void Trajectory::save(string path) { // development

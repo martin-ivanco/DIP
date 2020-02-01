@@ -1,9 +1,8 @@
 #ifndef __SCORESPACE__
 #define __SCORESPACE__
 
-#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
-
 #include <iostream>
+#include <string>
 #include <fstream>
 #include <vector>
 #include <tuple>
@@ -16,29 +15,40 @@ using namespace std;
 struct Trace {
     int phi;
     int lambda;
+    int aov;
     double score;
+
+    Trace() {
+        this->phi = -1;
+        this->lambda = -1;
+        this->aov = -1;
+        this->score = 0;
+    }
+
+    Trace(int phi, int lambda, int aov, double score) {
+        this->phi = phi;
+        this->lambda = lambda;
+        this->aov = aov;
+        this->score = score;
+    }
 };
 
-// TODO refactor
 class ScoreSpace {
 
 private:
-    static constexpr double AOV = 104.3; // for development only
+    Logger *log;
+    vector<vector<vector<vector<double>>>> space;
+    vector<vector<vector<vector<Trace>>>> accumulator;
 
-    vector<vector<vector<double>>> space;
-    vector<vector<vector<Trace>>> accumulator;
-    int splitLength; // in frames
-
-    Trace findBestAncestor(int time, int phi, int lambda);
-    void interpolate(vector<tuple<double, double, double>> &trajectory);
-    void saveToFile(); // for development only
+    Trace findBestAncestor(int time, int phi, int lambda, int aov, double epsilon);
 
 public:
-    ScoreSpace(int splitCount, int splitLength);
-    void set(int time, int phi, int lambda, double score);
-    bool findTrajectory(Trajectory &trajectory);
+    ScoreSpace(int splitCount, Logger &log);
+    void set(int time, int phi, int lambda, double aov, double score);
+    bool findTrajectory(Trajectory &trajectory, int splitLength, double angleEps);
     
-    void loadFromFile(); // for development only
+    void save(string path); // for development only
+    void load(string path); // for development only
 };
 
 #endif // __SCORESPACE__

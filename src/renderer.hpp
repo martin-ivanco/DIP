@@ -36,7 +36,7 @@ private:
 public:
     Renderer(Logger &log);
     vector<VideoInfo> splitVideo(VideoInfo &video, string outputFolder, int splitLength, bool skipExisting = false);
-    vector<VideoInfo> composeViews(vector<VideoInfo> &videos, string outputFolder, int phi, int lambda, cv::Size &viewSize, bool skipExisting = false);
+    vector<VideoInfo> composeViews(vector<VideoInfo> &videos, string outputFolder, double phi, double lambda, double aov, cv::Size &viewSize, bool skipExisting = false);
     VideoInfo renderTrajectory(VideoInfo &video, Trajectory &trajectory, VideoInfo &output);
 
 };
