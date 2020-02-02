@@ -89,8 +89,8 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
         // Opening input video and preparing view info
         this->open(reader, videos[i].path);
         string viewPath = fs::path(outputFolder) / this->getViewName(i, phi, lambda);
-        VideoInfo view(viewPath, videos[i].length, static_cast<double>(videos[i].fps), viewSize, i,
-                                                                       phi, lambda, aov);
+        VideoInfo view(viewPath, videos[i].length, static_cast<double>(videos[i].fps), viewSize,
+                       videos[i].split, phi, lambda, aov);
 
         // Opening view output and remapping each frame of input video
         if ((! skipExisting) || (! fs::exists(viewPath))) {
