@@ -24,7 +24,7 @@ private:
     Logger *log;
 
     string getSplitName(int timeBlock);
-    string getViewName(int timeBlock, int longitude, int latitude);
+    string getViewName(int timeBlock, int longitude, int latitude, double aov);
     tuple<cv::Mat, cv::Mat> getStereographicDisplacementMaps(cv::Size &sourceSize, cv::Size &projectionSize, double phi, double lambda, double aov = 104.3);
     double deg2rad(double deg);
     tuple<double, double> rad2erp(cv::Size planeSize, double phi, double lambda);

@@ -36,8 +36,9 @@ public:
     Glimpses(VideoInfo &video, Renderer &renderer, Logger &log);
     bool renderCoarse(bool skip_existing = false);
     bool renderDense(Trajectory &trajectory, bool skip_existing = false);
+    bool renderAll(int aov = -1, bool splits_only = false);
     int length();
-    VideoInfo get(int index);
+    VideoInfo get(int index, bool get_split = false);
     int splitCount();
     string videoName();
     void clear();

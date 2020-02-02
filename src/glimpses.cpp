@@ -73,6 +73,68 @@ bool Glimpses::renderDense(Trajectory &trajectory, bool skip_existing) {
         }
     }
 
+    // Doing one more iteration if the trajectory length is not a multiple of split length
+    if (trajectory.length() % splitLength != 0) {
+        int endIndex = trajectory.length() - (trajectory.length() % splitLength);
+        endIndex += trajectory.length() % splitLength == 0
+                    ? splitLength / 2 : (trajectory.length() % splitLength) / 2;
+        for (auto p : Glimpses::PHIS) {
+            if (abs(trajectory[endIndex].phi - p) > Glimpses::ANGLE_EPS)
+                continue;
+            for (auto l : Glimpses::LAMBDAS) {
+                double diff = abs(fmod(trajectory[endIndex].lambda - l + 180, 360)) - 180;
+                if (abs(diff) > Glimpses::ANGLE_EPS)
+                    continue;
+                for (auto a : Glimpses::AOVS) {
+                    inputs = {this->splits[this->splits.size() - 1]};
+                    views = this->renderer->composeViews(inputs, this->folder, p, l, a, size,
+                                                         skip_existing);
+                    this->glimpses.insert(this->glimpses.end(), views.begin(), views.end());
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Glimpses::renderAll(int aov, bool splits_only) {
+    if (aov == -1) 
+        this->log->info("Rendering all glimpses at all angles of view.");
+    else if ((aov >= 0) && (aov < Glimpses::AOVS.size()))
+        this->log->info("Rendering all glimpses at angle of view "
+                        + to_string(Glimpses::AOVS[aov]) + "°.");
+    else {
+        this->log->error("Unavailable angle of view index (" + to_string(aov) + ").");
+        return false;
+    }
+
+    // Generating splits
+    this->splits = this->renderer->splitVideo(this->video, this->folder, Glimpses::SPLIT_LENGTH);
+    if (splits_only)
+        return true;
+
+    // Generating all glimpses at all directions and selected angles of view
+    cv::Size size(Glimpses::WIDTH, Glimpses::HEIGHT);
+    vector<VideoInfo> views;
+    for (int p = 0; p < Glimpses::PHIS.size(); p++) {
+        for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {
+            if (aov == -1) {
+                for (int a = 0; a < Glimpses::AOVS.size(); a++) {
+                    views = this->renderer->composeViews(this->splits, this->folder,
+                                                         Glimpses::PHIS[p], Glimpses::LAMBDAS[l],
+                                                         Glimpses::AOVS[a], size);
+                }   
+            }
+            else {
+                views = this->renderer->composeViews(this->splits, this->folder,
+                                                     Glimpses::PHIS[p], Glimpses::LAMBDAS[l],
+                                                     Glimpses::AOVS[aov], size);
+            }
+            this->glimpses.insert(this->glimpses.end(), views.begin(), views.end());
+        }
+    }
+
     return true;
 }
 
@@ -80,7 +142,9 @@ int Glimpses::length() {
     return this->glimpses.size();
 }
 
-VideoInfo Glimpses::get(int index) {
+VideoInfo Glimpses::get(int index, bool get_split) {
+    if (get_split)
+        return this->splits[index];
     return this->glimpses[index];
 }
 

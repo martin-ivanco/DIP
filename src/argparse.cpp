@@ -73,6 +73,16 @@ bool ArgParse::parse() {
                 this->submethod = ArgParse::GLIMPSES_MAR;
                 continue;
             }
+            if (this->args[i] == string("d2D")) {
+                this->method = ArgParse::DATASET;
+                this->submethod = ArgParse::DATASET_2D;
+                continue;
+            }
+            if (this->args[i] == string("d3D")) {
+                this->method = ArgParse::DATASET;
+                this->submethod = ArgParse::DATASET_3D;
+                continue;
+            }
             this->log->error(string("Invalid method ") + this->args[i]
                    + string(". Run with -h to show available methods."));
             return false;

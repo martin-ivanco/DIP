@@ -19,10 +19,9 @@ C3D::C3D(Glimpses &glimpses, Logger &log) {
     // Checking if main C3D output directory exists
     this->c3dPath = fs::path("data") / fs::path("c3d");
     fs::create_directories(this->c3dPath);
-    this->prepare();
 }
 
-void C3D::prepare() {
+void C3D::prepare(bool use_splits) {
     this->log->info("Preparing folders and lists for C3D feature extraction.");
 
     // Opening input and output lists for C3D feature extraction
@@ -36,13 +35,14 @@ void C3D::prepare() {
     // Creating C3D output subdirectories for each glimpse
     char prefixBuffer[16];
     int glimpseSegmentCount = 0;
-    for (int i = 0; i < this->glimpses->length(); i++) {
-        fs::path glimpsePath = this->glimpses->get(i).path;
+    int length = use_splits ? this->glimpses->splitCount() : this->glimpses->length();
+    for (int i = 0; i < length; i++) {
+        fs::path glimpsePath = this->glimpses->get(i, use_splits).path;
         fs::path glimpseFeaturesDirectory = videoPath / fs::path(this->glimpses->get(i).name);
         fs::create_directories(glimpseFeaturesDirectory);
 
         // Adding the glimpse to the lists
-        glimpseSegmentCount = this->glimpses->get(i).length / C3D::SEGMENT_LENGTH;
+        glimpseSegmentCount = this->glimpses->get(i, use_splits).length / C3D::SEGMENT_LENGTH;
         for (int j = 0; j < glimpseSegmentCount; j++) {
             inputList << glimpsePath.string() << " " << to_string(j * C3D::SEGMENT_LENGTH)
                        << " 0" << endl;

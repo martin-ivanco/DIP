@@ -73,6 +73,8 @@ int main(int argc, char **argv) {
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
                 log.warning("This method is incomplete. C3D will be generated.");
                 C3D c3d(glimpses, log);
+                c3d.prepare();
+                c3d.extract();
                 return 2;
             }
             // Using saliency mapping
@@ -115,6 +117,8 @@ int main(int argc, char **argv) {
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
                 log.warning("This method is incomplete. C3D will be generated.");
                 C3D c3d(glimpses, log);
+                c3d.prepare();
+                c3d.extract();
                 return 2;
             }
             // Using saliency mapping
@@ -143,6 +147,17 @@ int main(int argc, char **argv) {
                 space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt")); // for development only
                 trajectory.save(fs::path("data") / fs::path("output") / fs::path("dense_trajectory.txt")); // for development only
             }
+        }
+
+        // Preparing dataset files - generating glimpses and extracting C3D features
+        if (arg.method == ArgParse::DATASET) {
+            log.info("Preparing dataset files.");
+            Glimpses glimpses(input, renderer, log);
+            glimpses.renderAll(1, arg.submethod == ArgParse::DATASET_2D);
+            C3D c3d(glimpses, log);
+            c3d.prepare(arg.submethod == ArgParse::DATASET_2D);
+            c3d.extract();
+            continue;
         }
 
         renderer.renderTrajectory(input, trajectory, output);

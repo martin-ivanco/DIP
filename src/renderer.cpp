@@ -88,7 +88,7 @@ vector<VideoInfo> Renderer::composeViews(vector<VideoInfo> &videos, string outpu
     for (int i = 0; i < videos.size(); i++) {
         // Opening input video and preparing view info
         this->open(reader, videos[i].path);
-        string viewPath = fs::path(outputFolder) / this->getViewName(i, phi, lambda);
+        string viewPath = fs::path(outputFolder) / this->getViewName(i, phi, lambda, aov);
         VideoInfo view(viewPath, videos[i].length, static_cast<double>(videos[i].fps), viewSize,
                        videos[i].split, phi, lambda, aov);
 
@@ -144,9 +144,9 @@ string Renderer::getSplitName(int timeBlock) {
     return string(buffer);
 }
 
-string Renderer::getViewName(int timeBlock, int phi, int lambda) {
+string Renderer::getViewName(int timeBlock, int phi, int lambda, double aov) {
     char buffer[100];
-    sprintf (buffer, "s%.4d_l%.3d_p%.3d.mp4", timeBlock, lambda, phi);
+    sprintf (buffer, "s%.4d_l%.3d_p%.3d_g%3.1f.mp4", timeBlock, lambda, phi, aov);
     return string(buffer);
 }
 

@@ -28,11 +28,10 @@ private:
     Glimpses *glimpses;
     filesystem::path c3dPath;
     int segmentCount = 0;
-    
-    void prepare();
 
 public:
     C3D(Glimpses &glimpses, Logger &log);
+    void prepare(bool use_splits = false);
     void extract();
 
 };
