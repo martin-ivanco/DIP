@@ -157,6 +157,7 @@ int main(int argc, char **argv) {
             C3D c3d(glimpses, log);
             c3d.prepare(arg.submethod == ArgParse::DATASET_2D);
             c3d.extract();
+            c3d.save();
             continue;
         }
 
