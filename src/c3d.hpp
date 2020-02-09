@@ -5,10 +5,12 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <opencv2/ml.hpp>
 
 #include "glimpses.hpp"
 #include "logger.hpp"
 #include "scorespace.hpp"
+#include "videoinfo.hpp"
 
 using namespace std;
 
@@ -35,10 +37,12 @@ private:
     static const string EXTRACTOR_PATH;
     static const string PROTOTXT_PATH;
     static const string MODEL_PATH;
+    static const string TRAIN_FEATURES_DIR;
     static const string GPU_ID;
     static const int BATCH_SIZE = 25;
     static const vector<string> LAYERS;
     static const int FEATURE_LENGTH = 4096;
+    static const vector<string> CATEGORIES;
 
     Logger *log;
     Glimpses *glimpses;
@@ -47,15 +51,16 @@ private:
     int segmentCount = 0;
 
     string concatStrings(const vector<string> &strings, const string separator = " ");
-    void loadFeature(string path, vector<float> &data);
+    void loadFeature(string featurePath, vector<float> &data);
     vector<float> computeMean(vector<vector<float>> &features);
+    void loadFeatures(string featuresPath, vector<Feature> &features);
 
 public:
     C3D(Glimpses &glimpses, Logger &log);
     C3D(string featuresPath, Logger &log);
     void prepare(bool use_splits = false);
     void extract();
-    bool evaluate(ScoreSpace &space, int category);
+    bool evaluate(ScoreSpace &space, int category, int layer = 0);
     void save();
 
 };

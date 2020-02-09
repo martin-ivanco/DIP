@@ -9,8 +9,10 @@ const string C3D::GLOG_CMD = "GLOG_logtosterr=1";
 const string C3D::EXTRACTOR_PATH = "external/c3d/extract_image_features.bin";
 const string C3D::PROTOTXT_PATH = "external/c3d/c3d_feature_extractor.prototxt";
 const string C3D::MODEL_PATH = "external/c3d/trained_model";
+const string C3D::TRAIN_FEATURES_DIR = "external/c3d/features";
 const string C3D::GPU_ID = "0";
 const vector<string> C3D::LAYERS = {"fc6-1", "fc7-1"};
+const vector<string> C3D::CATEGORIES = {"hiking", "mountain_climbing", "parade", "soccer"};
 
 C3D::C3D(Glimpses &glimpses, Logger &log) {
     this->glimpses = &glimpses;
@@ -25,22 +27,11 @@ C3D::C3D(string featuresPath, Logger &log) {
     this->glimpses = nullptr;
     this->log = &log;
 
-    // Load features from file
-    this->log->debug("Loading C3D features from file '" + featuresPath + "'.");
-    ifstream featuresFile(featuresPath, ios::binary);
-    while(! featuresFile.eof()) {
-        Feature feature;
+    // Checking if main C3D output directory exists
+    this->c3dPath = fs::path("data") / fs::path("c3d");
+    fs::create_directories(this->c3dPath);
 
-        for (int i = 0; i < C3D::LAYERS.size(); i++) {
-            vector<float> temp;
-            temp.reserve(C3D::FEATURE_LENGTH);
-            featuresFile.read(reinterpret_cast<char*>(temp.data()),
-                              C3D::FEATURE_LENGTH * sizeof(float));
-            feature[i] = temp;
-        }
-        
-        this->features.push_back(feature);
-    }
+    this->loadFeatures(featuresPath, this->features);
 }
 
 void C3D::prepare(bool use_splits) {
@@ -120,21 +111,77 @@ void C3D::extract() {
     fs::remove_all(this->c3dPath / fs::path(this->glimpses->videoName()));
 }
 
-bool C3D::evaluate(ScoreSpace &space, int category) {
-    // TODO Load negative and positive examples
-    // TODO Fit them to logistic regression
-    // TODO Predict for each C3D feature the score and save it to space
+bool C3D::evaluate(ScoreSpace &space, int category, int layer) {
+    this->log->info("Evaluating capture-worthiness of computed C3D features.");
+
+    // Load positive and negative training features
+    this->log->debug("Loading training features for category '" + C3D::CATEGORIES[category]
+                     + "'.");
+    vector<Feature> neg_features;
+    this->loadFeatures(fs::path(C3D::TRAIN_FEATURES_DIR)
+                       / fs::path(C3D::CATEGORIES[category] + "_neg.c3d"), neg_features);
+    vector<Feature> pos_features;
+    this->loadFeatures(fs::path(C3D::TRAIN_FEATURES_DIR)
+                       / fs::path(C3D::CATEGORIES[category] + "_pos.c3d"), pos_features);
+
+    // Prepare training data
+    int sample_count = neg_features.size() + pos_features.size();
+    cv::Mat train_features(sample_count, C3D::FEATURE_LENGTH, CV_32F);
+    cv::Mat train_labels(sample_count, 1, CV_32F);
+    for (int i = 0; i < neg_features.size(); i++) {
+        for (int j = 0; j < C3D::FEATURE_LENGTH; j++)
+            train_features.at<float>(i, j) = neg_features[i][layer][j];
+        train_labels.at<float>(i, 0) = 0;
+    }
+    for (int i = neg_features.size(); i < sample_count; i++) {
+        for (int j = 0; j < C3D::FEATURE_LENGTH; j++)
+            train_features.at<float>(i, j) = pos_features[i][layer][j];
+        train_labels.at<float>(i, 0) = 1;
+    }
+    auto train_data = cv::ml::TrainData::create(train_features, cv::ml::ROW_SAMPLE, train_labels);
+
+    // Train logistic regressor
+    this->log->debug("Training logistic regressor.");
+    auto regressor = cv::ml::LogisticRegression::create();
+    regressor->setTrainMethod(cv::ml::LogisticRegression::MINI_BATCH);
+    regressor->setMiniBatchSize(1);
+    regressor->setIterations(sample_count);
+    regressor->train(train_data);
+
+    // Prepare features for prediction
+    cv::Mat test_features(this->features.size(), C3D::FEATURE_LENGTH, CV_32F);
+    for (int i = 0; i < neg_features.size(); i++) {
+        for (int j = 0; j < C3D::FEATURE_LENGTH; j++)
+            test_features.at<float>(i, j) = this->features[i][layer][j];
+    }
+
+    // Predict scores
+    this->log->debug("Predicting scores.");
+    cv::Mat scores(this->features.size(), 1, CV_32S);
+    regressor->predict(test_features, scores);
+
+    // Input values to score space
+    for (int i = 0; i < this->features.size(); i++) {
+        VideoInfo g = this->glimpses->get(i);
+        space.set(g.split, g.phi, g.lambda, g.aov, scores.at<float>(i, 0));
+    }
+
     return true;
 }
 
 void C3D::save() {
-    this->log->debug("Saving C3D features to file.");
-    ofstream featuresFile(this->c3dPath / fs::path(this->glimpses->videoName() + ".c3d"),
-                         ios::binary);
+    fs::path featuresPath = this->c3dPath / fs::path(this->glimpses->videoName() + ".c3d");
+    this->log->debug("Saving C3D features to file '" + featuresPath.string() + "'.");
+    ofstream featuresFile(featuresPath, ios::binary);
     for (int i = 0; i < this->features.size(); i++) {
-        for (int j = 0; j < C3D::LAYERS.size(); j++)
+        for (int j = 0; j < C3D::LAYERS.size(); j++) {
+            string desperate = "Writing feature '";
+            for (int k = 0; k < this->features[i][j].size(); k++)
+                desperate += to_string(this->features[i][j][k]) + " ";
+            this->log->debug(desperate + "'.");
             featuresFile.write(reinterpret_cast<char*>(this->features[i][j].data()),
-                               C3D::FEATURE_LENGTH);
+                               C3D::FEATURE_LENGTH * sizeof(float));
+        }
     }
 }
 
@@ -144,8 +191,8 @@ string C3D::concatStrings(const vector<string> &strings, const string separator)
     return out.substr(0, out.length() - separator.length());
 }
 
-void C3D::loadFeature(string path, vector<float> &data) {
-    ifstream feature(path, ios::binary);
+void C3D::loadFeature(string featurePath, vector<float> &data) {
+    ifstream feature(featurePath, ios::binary);
     
     // Skip unimportant stuff
     feature.seekg(5 * sizeof(int));
@@ -165,4 +212,22 @@ vector<float> C3D::computeMean(vector<vector<float>> &features) {
         mean[i] = sum / features.size();
     }
     return mean;
+}
+
+void C3D::loadFeatures(string featuresPath, vector<Feature> &features) {
+    this->log->debug("Loading C3D features from file '" + featuresPath + "'.");
+    ifstream featuresFile(featuresPath, ios::binary);
+    while(! featuresFile.eof()) {
+        Feature feature;
+
+        for (int i = 0; i < C3D::LAYERS.size(); i++) {
+            vector<float> temp;
+            temp.reserve(C3D::FEATURE_LENGTH);
+            featuresFile.read(reinterpret_cast<char*>(temp.data()),
+                              C3D::FEATURE_LENGTH * sizeof(float));
+            feature[i] = temp;
+        }
+        
+        features.push_back(feature);
+    }
 }

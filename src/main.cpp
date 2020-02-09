@@ -68,20 +68,27 @@ int main(int argc, char **argv) {
 
             // Coarse search
             glimpses.renderCoarse(arg.skip & ArgParse::SKIP_GLIMPSES);
+            ScoreSpace space(glimpses.splitCount(), log);
 
             // Using C3D features
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
-                log.warning("This method is incomplete. C3D will be generated.");
+                // Extracting C3D features
                 C3D c3d(glimpses, log);
                 c3d.prepare();
                 c3d.extract();
-                return 2;
+
+                // Evaluating using chosen category
+                if (! c3d.evaluate(space, arg.category))
+                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * 2 * input.fps,
+                                           Glimpses::ANGLE_EPS * 2))
+                    return 3;
+                space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
+                trajectory.save(fs::path("data") / fs::path("output") / fs::path("coarse_trajectory.txt")); // for development only
             }
             // Using saliency mapping
             else {
                 // Initializing saliency and score space
                 Saliency saliency(glimpses, log);
-                ScoreSpace space(glimpses.splitCount(), log);
 
                 // Detremining saliency mapping method to use
                 int method = -1;
@@ -112,6 +119,7 @@ int main(int argc, char **argv) {
             // Dense search
             glimpses.clear();
             glimpses.renderDense(trajectory, arg.skip & ArgParse::SKIP_GLIMPSES);
+            space = ScoreSpace(glimpses.splitCount(), log);
 
             // Using C3D features
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
@@ -125,7 +133,6 @@ int main(int argc, char **argv) {
             else {
                 // Initializing saliency and score space
                 Saliency saliency(glimpses, log);
-                ScoreSpace space(glimpses.splitCount(), log);
 
                 // Detremining saliency mapping method to use
                 int method = -1;

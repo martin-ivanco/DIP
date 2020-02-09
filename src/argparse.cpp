@@ -20,18 +20,18 @@ bool ArgParse::parse() {
             this->log->info("Help will be added in future.");
             return false;
         }
+
         // Verbose output
         if ((this->args[i] == string("-v")) || (this->args[i] == string("--verbose"))) {
             this->verbose = true;
             this->log->setVerbose(true);
             continue;
         }
+
         // Method
         if ((this->args[i] == string("-m")) || (this->args[i] == string("--method"))) {
-            if (this->args.size() < i + 2) {
-                this->log->error(string("Argument ") + this->args[i] + string(" needs a value."));
+            if (! this->checkValue(i))
                 return false;
-            }
             i += 1;
             if (this->args[i] == string("asuh")) {
                 this->method = ArgParse::AUTOCROP;
@@ -83,16 +83,41 @@ bool ArgParse::parse() {
                 this->submethod = ArgParse::DATASET_3D;
                 continue;
             }
-            this->log->error(string("Invalid method ") + this->args[i]
-                   + string(". Run with -h to show available methods."));
+            this->log->error(string("Invalid method '") + this->args[i]
+                   + string("'. Run with -h to show available methods."));
             return false;
         }
+
+        // Category
+        if ((this->args[i] == string("-c")) || (this->args[i] == string("--category"))) {
+            if (! this->checkValue(i))
+                return false;
+            i += 1;
+            if (this->args[i] == string("h")) {
+                this->category = ArgParse::HIKING;
+                continue;
+            }
+            if (this->args[i] == string("mc")) {
+                this->category = ArgParse::MOUNTAIN_CLIMBING;
+                continue;
+            }
+            if (this->args[i] == string("p")) {
+                this->category = ArgParse::PARADE;
+                continue;
+            }
+            if (this->args[i] == string("s")) {
+                this->category = ArgParse::SOCCER;
+                continue;
+            }
+            this->log->error(string("Invalid category '") + this->args[i]
+                   + string("'. Run with -h to show available categories."));
+            return false;
+        }
+
         // Skip steps
         if ((this->args[i] == string("-s")) || (this->args[i] == string("--skip-if-exists"))) {
-            if (this->args.size() < i + 2) {
-                this->log->error(string("Argument ") + this->args[i] + string(" needs a value."));
+            if (! this->checkValue(i))
                 return false;
-            }
             i += 1;
             if (this->args[i] == string("g")) {
                 this->skip |= ArgParse::SKIP_GLIMPSES;
@@ -106,6 +131,7 @@ bool ArgParse::parse() {
                    + string("' for skip if exists argument."));
             return false;
         }
+
         // Invalid argument
         this->log->error(string("Invalid argument ") + this->args[i] + string("."));
         return false;
@@ -113,6 +139,13 @@ bool ArgParse::parse() {
 
     // Check if method was chosen
     if (this->method == ArgParse::UNASSIGNED) {
+        this->log->error("Parameter -m is required.");
+        return false;
+    }
+
+    // Check if category was chosen if using C3D
+    if ((this->method == ArgParse::GLIMPSES) && (this->submethod == ArgParse::GLIMPSES_C3D)
+                                             && (this->category == ArgParse::UNASSIGNED)) {
         this->log->error("Parameter -m is required.");
         return false;
     }
@@ -148,6 +181,15 @@ bool ArgParse::getInputs(vector<string> &input_paths) {
     // Check if any video file found
     if (input_paths.empty()) {
         this->log->error("No valid video file in input folder.");
+        return false;
+    }
+
+    return true;
+}
+
+bool ArgParse::checkValue(int idx) {
+    if (this->args.size() < idx + 2) {
+        this->log->error(string("Argument ") + this->args[idx] + string(" needs a value."));
         return false;
     }
 

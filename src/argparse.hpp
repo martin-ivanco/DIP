@@ -18,10 +18,14 @@ private:
     vector<string> args;
     Logger *log;
 
+    bool checkValue(int idx);
+
 public:
+    // Miscellaneous
     static const string INPUT_FOLDER;
     static const int UNASSIGNED = -1;
 
+    // Methods
     static const int AUTOCROP = 0;
     static const int AUTOCROP_SUH = 0;
     static const int AUTOCROP_STE = 1;
@@ -38,12 +42,20 @@ public:
     static const int DATASET_2D = 0;
     static const int DATASET_3D = 1;
 
+    // Categories
+    static const int HIKING = 0;
+    static const int MOUNTAIN_CLIMBING = 1;
+    static const int PARADE = 2;
+    static const int SOCCER = 3;
+
+    // Debug skipping switches
     static const int SKIP_GLIMPSES = 1;
     static const int SKIP_SALIENCY = 2;
 
     bool verbose = false;
     int method = UNASSIGNED;
     int submethod = UNASSIGNED;
+    int category = UNASSIGNED;
     int skip = 0;
 
     ArgParse(int argc, char **argv, Logger &log);
