@@ -175,10 +175,6 @@ void C3D::save() {
     ofstream featuresFile(featuresPath, ios::binary);
     for (int i = 0; i < this->features.size(); i++) {
         for (int j = 0; j < C3D::LAYERS.size(); j++) {
-            string desperate = "Writing feature '";
-            for (int k = 0; k < this->features[i][j].size(); k++)
-                desperate += to_string(this->features[i][j][k]) + " ";
-            this->log->debug(desperate + "'.");
             featuresFile.write(reinterpret_cast<char*>(this->features[i][j].data()),
                                C3D::FEATURE_LENGTH * sizeof(float));
         }
@@ -198,14 +194,14 @@ void C3D::loadFeature(string featurePath, vector<float> &data) {
     feature.seekg(5 * sizeof(int));
 
     // Read the feature
-    data.reserve(C3D::FEATURE_LENGTH);
+    data.resize(C3D::FEATURE_LENGTH);
     feature.read(reinterpret_cast<char*>(data.data()), C3D::FEATURE_LENGTH * sizeof(float));
 }
 
 vector<float> C3D::computeMean(vector<vector<float>> &features) {
     vector<float> mean;
     int dimension = features[0].size();
-    mean.reserve(dimension);
+    mean.resize(dimension);
     for (int i = 0; i < dimension; i++) {
         float sum = 0;
         for (auto f : features) sum += f[i];
@@ -222,7 +218,7 @@ void C3D::loadFeatures(string featuresPath, vector<Feature> &features) {
 
         for (int i = 0; i < C3D::LAYERS.size(); i++) {
             vector<float> temp;
-            temp.reserve(C3D::FEATURE_LENGTH);
+            temp.resize(C3D::FEATURE_LENGTH);
             featuresFile.read(reinterpret_cast<char*>(temp.data()),
                               C3D::FEATURE_LENGTH * sizeof(float));
             feature[i] = temp;
