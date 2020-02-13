@@ -4,6 +4,41 @@ using namespace std;
 namespace fs = std::filesystem;
 
 const string ArgParse::INPUT_FOLDER = "data/input";
+const string ArgParse::HELP_MESSAGE = 
+    "usage: ./run.sh run [-h] [-v] -m <method> -c <category>\n"
+    "\n"
+    "\e[1mAutomatic Spherical Video Cropping Algorithms\e[0m\n"
+    "\n"
+    "This application implements several methods of cropping spherical videos to\n"
+    "normal field of view videos. The input videos need to be stored in the\n"
+    "'data/input' folder. The output will be rendered into 'data/output' folder.\n"
+    "\n"
+    "required arguments:\n"
+    "  -m, --method     automatc cropping method to use - available methods are:\n"
+    "    axxx           basic automatic cropping methods applied on each frame\n"
+    "                   separately without temporal coherence\n"
+    "      asuh         utilizes method by Suh et. al. implemented by Ambrož\n"
+    "      aste         utilizes method by Stentiford implemented by Ambrož\n"
+    "      afan         utilizes method by Fang et. al. implemented by Ambrož\n"
+    "      a360         utilizes spherical saliency mapping technique by\n"
+    "                   Zhang et. al. and the cropping rectangle is found using brute\n"
+    "                   force\n"
+    "    gxxx           methods based on Pano2Vid by Su et. al. using\n"
+    "                   spatio-temporal glimpses\n"
+    "      gC3D         original method using classification based on C3D features\n"
+    "      gitt         evaluates scores using saliency mapping by Itti et. al.\n"
+    "      gste         evaluates scores using saliency mapping by Stentiford\n"
+    "      gmar         evaluates scores using saliency mapping by Margolin et. al.\n"
+    "    dxx            C3D features dataset preparation methods\n"
+    "      d2D          for classic 2D videos\n"
+    "      d3D          for spherical videos\n"
+    "\n"
+    "optional arguments:\n"
+    "  -h, --help       show this help message and exit\n"
+    "  -v, --verbose    print debug messages\n"
+    "  -c, --category   category of spatial video, required for gC3D method -\n"
+    "                   available categories are: hiking, mountain_climbing,\n"
+    "                   parade, soccer\n";
 
 ArgParse::ArgParse(int argc, char **argv, Logger &log) {
     this->log = &log;
@@ -17,7 +52,7 @@ bool ArgParse::parse() {
     for (int i = 0; i < this->args.size(); i++) {
         // Print help
         if ((this->args[i] == string("-h")) || (this->args[i] == string("--help"))) {
-            this->log->info("Help will be added in future.");
+            this->log->info(ArgParse::HELP_MESSAGE);
             return false;
         }
 

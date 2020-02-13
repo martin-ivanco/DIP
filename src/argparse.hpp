@@ -15,6 +15,8 @@ using namespace std;
 class ArgParse {
 
 private:
+    static const string HELP_MESSAGE;
+
     vector<string> args;
     Logger *log;
 
