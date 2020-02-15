@@ -59,7 +59,7 @@ public:
     C3D(Glimpses &glimpses, Logger &log);
     C3D(string featuresPath, Logger &log);
     void prepare(bool use_splits = false);
-    void extract();
+    void extract(bool use_splits = false);
     bool evaluate(ScoreSpace &space, int category, int layer = 0);
     void save();
 

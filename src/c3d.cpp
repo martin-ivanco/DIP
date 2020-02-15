@@ -67,7 +67,7 @@ void C3D::prepare(bool use_splits) {
     }
 }
 
-void C3D::extract() {
+void C3D::extract(bool use_splits) {
     this->log->info("Extracting C3D features.");
 
     // Extracting C3D features
@@ -83,9 +83,10 @@ void C3D::extract() {
 
     // Counting mean feature for each glimpse
     this->log->info("Computing mean C3D features.");
-    for (int i = 0; i < this->glimpses->length(); i++) {
+    int length = use_splits ? this->glimpses->splitCount() : this->glimpses->length();
+    for (int i = 0; i < length; i++) {
         Feature feature;
-        int glimpseSegmentCount = this->glimpses->get(i).length / C3D::SEGMENT_LENGTH;
+        int glimpseSegmentCount = this->glimpses->get(i, use_splits).length / C3D::SEGMENT_LENGTH;
         streampos filePos = outputList.tellg();
 
         for (int j = 0; j < C3D::LAYERS.size(); j++) {
