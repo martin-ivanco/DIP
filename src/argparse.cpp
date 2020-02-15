@@ -149,8 +149,14 @@ bool ArgParse::parse() {
             return false;
         }
 
+        // Smooth
+        if ((this->args[i] == string("-s")) || (this->args[i] == string("--smooth"))) {
+            this->smooth = true;
+            continue;
+        }
+
         // Skip steps
-        if ((this->args[i] == string("-s")) || (this->args[i] == string("--skip-if-exists"))) {
+        if (this->args[i] == string("--skip")) {
             if (! this->checkValue(i))
                 return false;
             i += 1;
@@ -181,7 +187,7 @@ bool ArgParse::parse() {
     // Check if category was chosen if using C3D
     if ((this->method == ArgParse::GLIMPSES) && (this->submethod == ArgParse::GLIMPSES_C3D)
                                              && (this->category == ArgParse::UNASSIGNED)) {
-        this->log->error("Parameter -m is required.");
+        this->log->error("Parameter -c is required for gC3D method.");
         return false;
     }
 

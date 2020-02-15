@@ -58,6 +58,7 @@ public:
     int method = UNASSIGNED;
     int submethod = UNASSIGNED;
     int category = UNASSIGNED;
+    int smooth = false;
     int skip = 0;
 
     ArgParse(int argc, char **argv, Logger &log);

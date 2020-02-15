@@ -59,6 +59,8 @@ int main(int argc, char **argv) {
                 log.error("Sorry, the 360 saliency method is not yet supported.");
                 return 2;
             }
+
+            trajectory.smooth(Glimpses::SPLIT_LENGTH);
         }
 
         // Using spatio-temporal glimpses

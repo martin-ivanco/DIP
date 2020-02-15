@@ -27,12 +27,22 @@ struct tPoint {
         this->aov = p.aov;
     }
 
+    void operator+=(tPoint p) {
+        this->phi += p.phi;
+        this->lambda += p.lambda;
+        this->aov += p.aov;
+    }
+
     tPoint operator+(tPoint p) {
         return tPoint(this->phi + p.phi, this->lambda + p.lambda, this->aov + p.aov);
     }
 
     tPoint operator*(double n) {
         return tPoint(this->phi * n, this->lambda * n, this->aov * n);
+    }
+
+    tPoint operator/(double n) {
+        return tPoint(this->phi / n, this->lambda / n, this->aov / n);
     }
 };
 
@@ -47,6 +57,7 @@ private:
 public:
     Trajectory(Logger &log, int length);
     bool interpolate(int splitLength);
+    bool smooth(int splitLenght);
     int length();
     tPoint &operator[](size_t idx);
 

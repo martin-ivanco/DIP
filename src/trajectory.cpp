@@ -24,7 +24,7 @@ bool Trajectory::interpolate(int splitLength) {
         for (int i = 0; i < this->path.size(); i++)
             this->path[i] = this->path[startIndex];
         return true;
-    }    
+    }
 
     // Main loop - linarly interpolating between each neighbouring pair of points
     for (int i = 0; i < this->path.size() / splitLength - 1; i++) {
@@ -50,6 +50,30 @@ bool Trajectory::interpolate(int splitLength) {
     for (int i = endIndex + 1; i < this->path.size(); i++)
         this->path[i] = this->path[endIndex];
 
+    return true;
+}
+
+bool Trajectory::smooth(int splitLength) {
+    this->log->debug("Smoothing trajectory.");
+
+    // Main loop - average coordinates of each split
+    for (int i = 0; i < this->path.size() / splitLength; i++) {
+        tPoint avg(0, 0, 0);
+        for (int j = 0; j < splitLength; j++)
+            avg += this->path[i * splitLength + j];
+        this->path[i * splitLength + splitLength / 2] = avg / splitLength;
+    }
+
+    // If the size isn't divisible by split length, doing one more iteration
+    int modulo = this->path.size() % splitLength;
+    if (modulo != 0) {
+        tPoint avg(0, 0, 0);
+        for (int j = 0; j < modulo; j++)
+            avg += this->path[this->path.size() - modulo + j];
+        this->path[this->path.size() - modulo + modulo / 2] = avg / modulo;
+    }
+
+    this->interpolate(splitLength);
     return true;
 }
 
