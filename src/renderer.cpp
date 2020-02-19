@@ -29,6 +29,12 @@ vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, in
 
     // Main loop
     while (! finished) {
+        // Reading a frame to check if there are any more frames to be read
+        // This is needed when the frame count of video is divisible by splits frame count
+        reader.read(frame);
+        if (frame.empty())
+            break;
+
         // Preparing split info
         string splitPath = fs::path(outputFolder) / this->getSplitName(splits.size());
         VideoInfo split(splitPath, 0, static_cast<double>(video.fps), video.size, splits.size());
@@ -38,8 +44,12 @@ vector<VideoInfo> Renderer::splitVideo(VideoInfo &video, string outputFolder, in
             this->open(writer, splitPath, split.fps, split.size);
         this->log->debug("Generating split " + to_string(splits.size()) + ".");
 
+        // Writing the first frame read at the beginning of main loop
+        if (writer.isOpened())
+                writer.write(frame);
+
         // Reading frames from input and writing to output for the length of split
-        int i = 0;
+        int i = 1;
         for (; i < video.fps * splitLength; i++) {
             reader.read(frame);
             if (frame.empty()) {

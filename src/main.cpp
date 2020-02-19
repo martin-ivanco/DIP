@@ -60,7 +60,8 @@ int main(int argc, char **argv) {
                 return 2;
             }
 
-            trajectory.smooth(Glimpses::SPLIT_LENGTH);
+            if (arg.smooth)
+                trajectory.smooth(Glimpses::SPLIT_LENGTH * input.fps);
         }
 
         // Using spatio-temporal glimpses

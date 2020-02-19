@@ -58,8 +58,14 @@ cv::Mat AutoCrop::getSaliencyMap(cv::Mat &frame, int method) {
     this->log->debug("Getting saliency map.");
 
     if (method == AutoCrop::FANG) {
-        SalMapMargolin margolin(frame);
-        return margolin.salMap;
+        try {
+            SalMapMargolin margolin(frame);
+            return margolin.salMap;
+        }
+        catch(...) {
+            this->log->warning("Exception in getting saliency map by Margolin!");
+            return cv::Mat::zeros(Glimpses::HEIGHT, Glimpses::WIDTH, CV_32FC1);
+        }
     }
 
     if (method == AutoCrop::STENTIFORD) {
@@ -87,9 +93,16 @@ cv::Rect AutoCrop::getROI(cv::Mat &frame, cv::Mat &saliency, int method) {
 	if (vStep < 1) vStep = 1;
 
     if (method == AutoCrop::FANG) {
-        AutocropFang fang(frame, saliency, AutoCrop::FANG_MODEL_PATH);
-        fang.WHratioCrop(AutoCrop::RATIO_WIDTH, AutoCrop::RATIO_HEIGHT, hStep, vStep);
-        return cv::Rect(fang.getX(), fang.getY(), fang.getWidth(), fang.getHeight());
+        try {
+            AutocropFang fang(frame, saliency, AutoCrop::FANG_MODEL_PATH);
+            fang.WHratioCrop(AutoCrop::RATIO_WIDTH, AutoCrop::RATIO_HEIGHT, hStep, vStep);
+            return cv::Rect(fang.getX(), fang.getY(), fang.getWidth(), fang.getHeight());
+        }
+        catch(...) {
+            this->log->warning("Exception in getting cropping rectangle by Fang!");
+            return cv::Rect(Glimpses::WIDTH / 4, Glimpses::HEIGHT / 4,
+                            Glimpses::WIDTH / 2, Glimpses::HEIGHT / 2);
+        }
     }
 
     if (method == AutoCrop::STENTIFORD) {

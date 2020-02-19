@@ -47,15 +47,19 @@ void C3D::prepare(bool use_splits) {
 
     // Creating C3D output subdirectories for each glimpse
     char prefixBuffer[16];
-    int glimpseSegmentCount = 0;
     int length = use_splits ? this->glimpses->splitCount() : this->glimpses->length();
     for (int i = 0; i < length; i++) {
+        // Checking if the glimpse is long enough
+        int glimpseSegmentCount = this->glimpses->get(i, use_splits).length / C3D::SEGMENT_LENGTH;
+        if (glimpseSegmentCount <= 0)
+            continue;
+
+        // Preparing directory for the glimpses features
         fs::path glimpsePath = this->glimpses->get(i, use_splits).path;
-        fs::path glimpseFeaturesDirectory = videoPath / fs::path(this->glimpses->get(i).name);
+        fs::path glimpseFeaturesDirectory = videoPath / fs::path(this->glimpses->get(i, use_splits).name);
         fs::create_directories(glimpseFeaturesDirectory);
 
         // Adding the glimpse to the lists
-        glimpseSegmentCount = this->glimpses->get(i, use_splits).length / C3D::SEGMENT_LENGTH;
         for (int j = 0; j < glimpseSegmentCount; j++) {
             inputList << glimpsePath.string() << " " << to_string(j * C3D::SEGMENT_LENGTH)
                        << " 0" << endl;
@@ -85,10 +89,15 @@ void C3D::extract(bool use_splits) {
     this->log->info("Computing mean C3D features.");
     int length = use_splits ? this->glimpses->splitCount() : this->glimpses->length();
     for (int i = 0; i < length; i++) {
-        Feature feature;
+        // Checking if the glimpse is long enough (and features were generated)
         int glimpseSegmentCount = this->glimpses->get(i, use_splits).length / C3D::SEGMENT_LENGTH;
+        if (glimpseSegmentCount <= 0)
+            continue;
+
+        Feature feature;
         streampos filePos = outputList.tellg();
 
+        // Computing mean feature of each layer
         for (int j = 0; j < C3D::LAYERS.size(); j++) {
             vector<vector<float>> layer;
             outputList.seekg(filePos);
@@ -151,7 +160,7 @@ bool C3D::evaluate(ScoreSpace &space, int category, int layer) {
 
     // Prepare features for prediction
     cv::Mat test_features(this->features.size(), C3D::FEATURE_LENGTH, CV_32F);
-    for (int i = 0; i < neg_features.size(); i++) {
+    for (int i = 0; i < this->features.size(); i++) {
         for (int j = 0; j < C3D::FEATURE_LENGTH; j++)
             test_features.at<float>(i, j) = this->features[i][layer][j];
     }
