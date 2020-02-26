@@ -44,7 +44,8 @@ void ScoreSpace::set(int time, int phi, int lambda, double aov, double score) {
     this->space[time][phiIndex][lambdaIndex][aovIndex] = score;
 }
 
-bool ScoreSpace::findTrajectory(Trajectory &trajectory, int splitLength, double angleEps) {    
+bool ScoreSpace::findTrajectory(Trajectory &trajectory, int splitLength, double angleEps) {
+    this->log->debug("Finding trajectory in space.");
     // Initialization - scores from first time split
     for (int p = 0; p < Glimpses::PHIS.size(); p++) {
         for (int l = 0; l < Glimpses::LAMBDAS.size(); l++) {

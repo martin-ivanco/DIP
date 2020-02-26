@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
 
                 // Evaluating using chosen category
                 if (! c3d.evaluate(space, arg.category))
+                    return 3;
                 if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * 2 * input.fps,
                                            Glimpses::ANGLE_EPS * 2))
                     return 3;
@@ -110,7 +111,6 @@ int main(int argc, char **argv) {
                 else {
                     if (! saliency.evaluate(space, method))
                         return 3;
-                    space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
                 }
                 if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * 2 * input.fps,
                                            Glimpses::ANGLE_EPS * 2))
@@ -126,11 +126,19 @@ int main(int argc, char **argv) {
 
             // Using C3D features
             if (arg.submethod == ArgParse::GLIMPSES_C3D) {
-                log.warning("This method is incomplete. C3D will be generated.");
+                // Extracting C3D features
                 C3D c3d(glimpses, log);
                 c3d.prepare();
                 c3d.extract();
-                return 2;
+
+                // Evaluating using chosen category
+                if (! c3d.evaluate(space, arg.category))
+                    return 3;
+                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * input.fps,
+                                           Glimpses::ANGLE_EPS))
+                    return 3;
+                space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt")); // for development only
+                trajectory.save(fs::path("data") / fs::path("output") / fs::path("dense_trajectory.txt")); // for development only
             }
             // Using saliency mapping
             else {
@@ -150,7 +158,6 @@ int main(int argc, char **argv) {
                 // Evaluating saliency and finding the best trajectory
                 if (! saliency.evaluate(space, method))
                     return 3;
-                space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt")); // for development only
                 if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * input.fps,
                                            Glimpses::ANGLE_EPS))
                     return 3;

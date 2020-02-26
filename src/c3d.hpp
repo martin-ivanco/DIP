@@ -38,6 +38,10 @@ private:
     static const string PROTOTXT_PATH;
     static const string MODEL_PATH;
     static const string TRAIN_FEATURES_DIR;
+    static const string NEG_FEATURES_DIR;
+    static const string POS_FEATURES_DIR;
+    static const int NEG_TRAIN_FEATURE_COUNT = 20000;
+    static const int POS_TRAIN_FEATURE_COUNT = 10000;
     static const string GPU_ID;
     static const int BATCH_SIZE = 25;
     static const vector<string> LAYERS;
@@ -51,9 +55,10 @@ private:
     int segmentCount = 0;
 
     string concatStrings(const vector<string> &strings, const string separator = " ");
-    void loadFeature(string featurePath, vector<float> &data);
     vector<float> computeMean(vector<vector<float>> &features);
+    void loadFeature(string featurePath, vector<float> &data);
     void loadFeatures(string featuresPath, vector<Feature> &features);
+    void loadFeaturesFolder(string folderPath, vector<Feature> &features, int limit = 0);
 
 public:
     C3D(Glimpses &glimpses, Logger &log);

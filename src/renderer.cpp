@@ -225,7 +225,7 @@ bool Renderer::remapFrame(cv::VideoCapture &capture, cv::VideoWriter &writer,
     capture.read(frame);
     if (frame.empty())
         return false;
-    cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR);
+    cv::remap(frame, warped, map1, map2, cv::INTER_LINEAR, cv::BORDER_WRAP);
     writer.write(warped);
     return true;
 }
