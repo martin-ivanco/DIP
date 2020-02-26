@@ -16,20 +16,101 @@
 
 using namespace std;
 
+bool autocrop(VideoInfo input, ArgParse &arg, Trajectory &trajectory, Logger &log) {
+    log.info("Using automatic cropping method.");
+
+    // Detremining automatic cropping method to use
+    int method = -1;
+    if (arg.submethod == ArgParse::AUTOCROP_FAN) method = AutoCrop::FANG;
+    if (arg.submethod == ArgParse::AUTOCROP_STE) method = AutoCrop::STENTIFORD;
+    if (arg.submethod == ArgParse::AUTOCROP_SUH) method = AutoCrop::SUH;
+    if (arg.submethod == ArgParse::AUTOCROP_360) {
+        log.error("Sorry, the 360 saliency method is not yet supported.");
+        return false;
+    }
+
+    // Evaluating trajectory using chosen method and smoothing it if requested
+    AutoCrop autoCrop(log);
+    if (! autoCrop.findTrajectory(trajectory, input, method))
+        return false;
+    if (arg.smooth)
+        trajectory.smooth(Glimpses::SPLIT_LENGTH * input.fps);
+    
+    return true;
+}
+
+bool evaluateGlimpses(Glimpses &glimpses, ScoreSpace &space, ArgParse &arg, Logger &log) {
+    if (arg.submethod == ArgParse::GLIMPSES_C3D) {
+        // Extracting C3D features
+        C3D c3d(glimpses, log);
+        c3d.prepare();
+        c3d.extract();
+
+        // Evaluating using chosen category
+        return c3d.evaluate(space, arg.category);
+    }
+    else {
+        // Detremining saliency mapping method to use
+        int method = -1;
+        if (arg.submethod == ArgParse::GLIMPSES_ITT) method = Saliency::ITTI;
+        if (arg.submethod == ArgParse::GLIMPSES_MAR) method = Saliency::MARGOLIN;
+        if (arg.submethod == ArgParse::GLIMPSES_STE) method = Saliency::STENTIFORD;
+
+        // Evaluating saliency
+        Saliency saliency(glimpses, log);
+        return saliency.evaluate(space, method);
+    }
+}
+
+bool autocam(Glimpses &glimpses, ArgParse &arg, Trajectory &trajectory, Logger &log) {
+    log.info("Using spatio-temporal glimpses method.");
+
+    // Coarse search
+    if (! glimpses.renderCoarse(arg.skip & ArgParse::SKIP_GLIMPSES))
+        return false;
+    ScoreSpace space(glimpses.splitCount(), log);
+    if (! evaluateGlimpses(glimpses, space, arg, log))
+        return false;
+    if (! space.findTrajectory(trajectory, glimpses.splitLength() * 2, Glimpses::ANGLE_EPS * 2))
+        return false;
+    // for development only
+    space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt"));
+    trajectory.save(fs::path("data") / fs::path("output") / fs::path("coarse_trajectory.txt"));
+
+    // Dense search
+    glimpses.clear();
+    if (! glimpses.renderDense(trajectory, arg.skip & ArgParse::SKIP_GLIMPSES))
+        return false;
+    space = ScoreSpace(glimpses.splitCount(), log);
+    if (! evaluateGlimpses(glimpses, space, arg, log))
+        return false;
+    if (! space.findTrajectory(trajectory, glimpses.splitLength(), Glimpses::ANGLE_EPS))
+        return false;
+    // for development only
+    space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt"));
+    trajectory.save(fs::path("data") / fs::path("output") / fs::path("dense_trajectory.txt"));
+
+    return true;
+}
+
 int main(int argc, char **argv) {
+    // Setting up logger and parsing arguments
     Logger log(true);
     ArgParse arg(argc, argv, log);
     if (! arg.parse()) 
         return 1;
 
+    // Finding inputs
     vector<string> input_paths;
     if (! arg.getInputs(input_paths))
         return 1;
 
+    // Creating output folder and renderer
     fs::path outputFolder = fs::path("data") / fs::path("output");
     fs::create_directories(outputFolder);
     Renderer renderer(log);
     
+    // Processing input videos
     for (auto path : input_paths) {
         log.info("Processing input path '" + path + "'.");
         VideoInfo input(path);
@@ -39,131 +120,15 @@ int main(int argc, char **argv) {
 
         // Using standard automatic cropping
         if (arg.method == ArgParse::AUTOCROP) {
-            log.info("Using automatic cropping method.");
-            AutoCrop autoCrop(log);
-
-            if (arg.submethod == ArgParse::AUTOCROP_SUH) {
-                if (! autoCrop.findTrajectory(trajectory, path, AutoCrop::SUH))
-                    return 3;
-            }
-            if (arg.submethod == ArgParse::AUTOCROP_STE) {
-                if (! autoCrop.findTrajectory(trajectory, path, AutoCrop::STENTIFORD))
-                    return 3;
-            }
-            if (arg.submethod == ArgParse::AUTOCROP_FAN) {
-                if (! autoCrop.findTrajectory(trajectory, path, AutoCrop::FANG))
-                    return 3;
-            }
-
-            if (arg.submethod == ArgParse::AUTOCROP_360) {
-                log.error("Sorry, the 360 saliency method is not yet supported.");
+            if (! autocrop(input, arg, trajectory, log))
                 return 2;
-            }
-
-            if (arg.smooth)
-                trajectory.smooth(Glimpses::SPLIT_LENGTH * input.fps);
         }
 
         // Using spatio-temporal glimpses
         if (arg.method == ArgParse::GLIMPSES) {
-            log.info("Using spatio-temporal glimpses method.");
             Glimpses glimpses(input, renderer, log);
-
-            // Coarse search
-            glimpses.renderCoarse(arg.skip & ArgParse::SKIP_GLIMPSES);
-            ScoreSpace space(glimpses.splitCount(), log);
-
-            // Using C3D features
-            if (arg.submethod == ArgParse::GLIMPSES_C3D) {
-                // Extracting C3D features
-                C3D c3d(glimpses, log);
-                c3d.prepare();
-                c3d.extract();
-
-                // Evaluating using chosen category
-                if (! c3d.evaluate(space, arg.category))
-                    return 3;
-                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * 2 * input.fps,
-                                           Glimpses::ANGLE_EPS * 2))
-                    return 3;
-                space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
-                trajectory.save(fs::path("data") / fs::path("output") / fs::path("coarse_trajectory.txt")); // for development only
-            }
-            // Using saliency mapping
-            else {
-                // Initializing saliency and score space
-                Saliency saliency(glimpses, log);
-
-                // Detremining saliency mapping method to use
-                int method = -1;
-                if (arg.submethod == ArgParse::GLIMPSES_ITT) method = Saliency::ITTI;
-                if (arg.submethod == ArgParse::GLIMPSES_MAR) method = Saliency::MARGOLIN;
-                if (arg.submethod == ArgParse::GLIMPSES_STE) method = Saliency::STENTIFORD;
-                if (method == -1) {
-                    log.error("Unknown saliency method.");
-                    return 3;
-                }
-
-                // Evaluating saliency and finding the best trajectory
-                if (arg.skip & ArgParse::SKIP_SALIENCY) {
-                    space.load(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
-                }
-                else {
-                    if (! saliency.evaluate(space, method))
-                        return 3;
-                }
-                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * 2 * input.fps,
-                                           Glimpses::ANGLE_EPS * 2))
-                    return 3;
-                space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt")); // for development only
-                trajectory.save(fs::path("data") / fs::path("output") / fs::path("coarse_trajectory.txt")); // for development only
-            }
-                
-            // Dense search
-            glimpses.clear();
-            glimpses.renderDense(trajectory, arg.skip & ArgParse::SKIP_GLIMPSES);
-            space = ScoreSpace(glimpses.splitCount(), log);
-
-            // Using C3D features
-            if (arg.submethod == ArgParse::GLIMPSES_C3D) {
-                // Extracting C3D features
-                C3D c3d(glimpses, log);
-                c3d.prepare();
-                c3d.extract();
-
-                // Evaluating using chosen category
-                if (! c3d.evaluate(space, arg.category))
-                    return 3;
-                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * input.fps,
-                                           Glimpses::ANGLE_EPS))
-                    return 3;
-                space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt")); // for development only
-                trajectory.save(fs::path("data") / fs::path("output") / fs::path("dense_trajectory.txt")); // for development only
-            }
-            // Using saliency mapping
-            else {
-                // Initializing saliency and score space
-                Saliency saliency(glimpses, log);
-
-                // Detremining saliency mapping method to use
-                int method = -1;
-                if (arg.submethod == ArgParse::GLIMPSES_ITT) method = Saliency::ITTI;
-                if (arg.submethod == ArgParse::GLIMPSES_MAR) method = Saliency::MARGOLIN;
-                if (arg.submethod == ArgParse::GLIMPSES_STE) method = Saliency::STENTIFORD;
-                if (method == -1) {
-                    log.error("Unknown saliency method.");
-                    return 3;
-                }
-
-                // Evaluating saliency and finding the best trajectory
-                if (! saliency.evaluate(space, method))
-                    return 3;
-                if (! space.findTrajectory(trajectory, Glimpses::SPLIT_LENGTH * input.fps,
-                                           Glimpses::ANGLE_EPS))
-                    return 3;
-                space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt")); // for development only
-                trajectory.save(fs::path("data") / fs::path("output") / fs::path("dense_trajectory.txt")); // for development only
-            }
+            if (! autocam(glimpses, arg, trajectory, log))
+                return 2;
         }
 
         // Preparing dataset files - generating glimpses and extracting C3D features

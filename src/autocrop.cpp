@@ -8,9 +8,9 @@ AutoCrop::AutoCrop(Logger &log) {
     this->log = &log;
 }
 
-bool AutoCrop::findTrajectory(Trajectory &trajectory, string videoFilePath, int method, int step) {
+bool AutoCrop::findTrajectory(Trajectory &trajectory, VideoInfo input, int method, int step) {
     // Opening input video
-    cv::VideoCapture video = cv::VideoCapture(videoFilePath);
+    cv::VideoCapture video = cv::VideoCapture(input.path);
     if (! video.isOpened()) {
         this->log->error("Couldn't open video.");
         return false;

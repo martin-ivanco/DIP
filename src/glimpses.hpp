@@ -41,6 +41,7 @@ public:
     VideoInfo get(int index, bool get_split = false);
     int splitCount();
     string videoName();
+    int splitLength();
     void clear();
 
 };

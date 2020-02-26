@@ -7,6 +7,7 @@
 #include "logger.hpp"
 #include "saliency.hpp"
 #include "trajectory.hpp"
+#include "videoinfo.hpp"
 #include "../external/saliency/SalMapItti.h"
 #include "../external/saliency/SalMapMargolin.h"
 #include "../external/saliency/SalMapStentiford.h"
@@ -38,7 +39,7 @@ public:
     static const int SUH = 1;
 
     AutoCrop(Logger &log);
-    bool findTrajectory(Trajectory &trajectory, string videoFilePath, int method, int step = 1);
+    bool findTrajectory(Trajectory &trajectory, VideoInfo input, int method, int step = 1);
 
 };
 

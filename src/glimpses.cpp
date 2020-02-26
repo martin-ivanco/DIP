@@ -156,6 +156,10 @@ string Glimpses::videoName() {
     return this->video.name;
 }
 
+int Glimpses::splitLength() {
+    return Glimpses::SPLIT_LENGTH * this->video.fps;
+}
+
 void Glimpses::clear() {
     this->splits.clear();
     this->glimpses.clear();
