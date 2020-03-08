@@ -10,8 +10,8 @@ const string C3D::EXTRACTOR_PATH = "external/c3d/extract_image_features.bin";
 const string C3D::PROTOTXT_PATH = "external/c3d/c3d_feature_extractor.prototxt";
 const string C3D::MODEL_PATH = "external/c3d/trained_model";
 const string C3D::TRAIN_FEATURES_DIR = "external/c3d/features";
-const string C3D::NEG_FEATURES_DIR = "neg";
-const string C3D::POS_FEATURES_DIR = "pos";
+const string C3D::NEG_FEATURES_DIR = "spatial";
+const string C3D::POS_FEATURES_DIR = "nfov";
 const string C3D::GPU_ID = "0";
 const vector<string> C3D::LAYERS = {"fc6-1", "fc7-1"};
 const vector<string> C3D::CATEGORIES = {"hiking", "mountain_climbing", "parade", "soccer"};
@@ -131,12 +131,13 @@ bool C3D::evaluate(ScoreSpace &space, int category, int layer) {
                      + "'.");
     vector<Feature> neg_features;
     this->loadFeaturesFolder(
-        fs::path(C3D::TRAIN_FEATURES_DIR) / fs::path(C3D::CATEGORIES[category])
-        / fs::path(C3D::NEG_FEATURES_DIR), neg_features, C3D::NEG_TRAIN_FEATURE_COUNT);
+        fs::path(C3D::TRAIN_FEATURES_DIR) / fs::path(C3D::NEG_FEATURES_DIR)
+        / fs::path(C3D::CATEGORIES[category]), neg_features, C3D::NEG_TRAIN_FEATURE_COUNT);
     vector<Feature> pos_features;
     this->loadFeaturesFolder(
-        fs::path(C3D::TRAIN_FEATURES_DIR) / fs::path(C3D::CATEGORIES[category])
-        / fs::path(C3D::POS_FEATURES_DIR), pos_features, C3D::POS_TRAIN_FEATURE_COUNT);
+        fs::path(C3D::TRAIN_FEATURES_DIR) / fs::path(C3D::POS_FEATURES_DIR)
+        / fs::path(C3D::CATEGORIES[category] / fs::path("train")), pos_features,
+        C3D::POS_TRAIN_FEATURE_COUNT);
 
     // Prepare training data
     this->log->debug("Preparing data for training logistic regressor.");
@@ -251,8 +252,9 @@ void C3D::loadFeaturesFolder(string folderPath, vector<Feature> &features, int l
     this->log->debug("Loading C3D features from folder '" + folderPath + "'.");
 
     for (auto file : fs::directory_iterator(folderPath)) {
-        string ext = file.path().extension().string();
-        if (ext != string(".c3d"))
+        fs::path filepath = file.path();
+        if ((filepath.extension().string() != string(".c3d"))
+                || (filepath.stem().string() == this->glimpses->videoName()))
             continue;
 
         this->loadFeatures(file.path(), features);
