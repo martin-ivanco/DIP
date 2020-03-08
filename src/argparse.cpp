@@ -5,7 +5,7 @@ namespace fs = std::filesystem;
 
 const string ArgParse::INPUT_FOLDER = "data/input";
 const string ArgParse::HELP_MESSAGE = 
-    "usage: ./run.sh run [-h] [-v] -m <method> -c <category>\n"
+    "usage: ./run.sh run [-h] [-v] -m <method> -c <category> [-s]\n"
     "\n"
     "\e[1mAutomatic Spherical Video Cropping Algorithms\e[0m\n"
     "\n"
@@ -15,30 +15,37 @@ const string ArgParse::HELP_MESSAGE =
     "\n"
     "required arguments:\n"
     "  -m, --method     automatc cropping method to use - available methods are:\n"
-    "    axxx           basic automatic cropping methods applied on each frame\n"
+    "    ac-xxx         basic automatic cropping methods applied on each frame\n"
     "                   separately without temporal coherence\n"
-    "      asuh         utilizes method by Suh et. al. implemented by Ambrož\n"
-    "      aste         utilizes method by Stentiford implemented by Ambrož\n"
-    "      afan         utilizes method by Fang et. al. implemented by Ambrož\n"
-    "      a360         utilizes spherical saliency mapping technique by\n"
-    "                   Zhang et. al. and the cropping rectangle is found using brute\n"
-    "                   force\n"
-    "    gxxx           methods based on Pano2Vid by Su et. al. using\n"
+    "      ac-suh       utilizes method by Suh et. al. implemented by Ambrož\n"
+    "      ac-ste       utilizes method by Stentiford implemented by Ambrož\n"
+    "      ac-fan       utilizes method by Fang et. al. implemented by Ambrož\n"
+    // "      ac-360       utilizes spherical saliency mapping technique by\n"
+    // "                   Zhang et. al. and the cropping rectangle is found using brute\n"
+    // "                   force\n"
+    "    stg-xxx        methods based on Pano2Vid by Su et. al. using\n"
     "                   spatio-temporal glimpses\n"
-    "      gC3D         original method using classification based on C3D features\n"
-    "      gitt         evaluates scores using saliency mapping by Itti et. al.\n"
-    "      gste         evaluates scores using saliency mapping by Stentiford\n"
-    "      gmar         evaluates scores using saliency mapping by Margolin et. al.\n"
-    "    dxx            C3D features dataset preparation methods\n"
-    "      d2D          for classic 2D videos\n"
-    "      d3D          for spherical videos\n"
+    "      stg-c3d      original method using classification based on C3D features\n"
+    "      stg-itt      evaluates scores using saliency mapping by Itti et. al.\n"
+    "      stg-ste      evaluates scores using saliency mapping by Stentiford\n"
+    "      stg-mar      evaluates scores using saliency mapping by Margolin et. al.\n"
+    "    aid-xxxx       methods based on Shot Orientation Controls for Interactive\n"
+    "                   Cinematography with 360° Video by Pavel et. al.\n"
+    "      aid-shot     original method as explained in section Automatic Importance\n"
+    "                   Detection - static view for each shot\n"
+    // "      aid-cont     reorients camera for each frame\n"
+    "    ds-xx          C3D features dataset preparation methods\n"
+    "      ds-2D        for classic 2D videos\n"
+    "      ds-3D        for spherical videos\n"
     "\n"
     "optional arguments:\n"
     "  -h, --help       show this help message and exit\n"
     "  -v, --verbose    print debug messages\n"
     "  -c, --category   category of spatial video, required for gC3D method -\n"
     "                   available categories are: hiking, mountain_climbing,\n"
-    "                   parade, soccer\n";
+    "                   parade, soccer\n"
+    "  -s, --smooth     smooth the acquired trajectory before rendering video -\n"
+    "                   useful for automatic cropping methods and aid-cont method\n";
 
 ArgParse::ArgParse(int argc, char **argv, Logger &log) {
     this->log = &log;
@@ -68,52 +75,62 @@ bool ArgParse::parse() {
             if (! this->checkValue(i))
                 return false;
             i += 1;
-            if (this->args[i] == string("asuh")) {
+            if (this->args[i] == string("ac-suh")) {
                 this->method = ArgParse::AUTOCROP;
                 this->submethod = ArgParse::AUTOCROP_SUH;
                 continue;
             }
-            if (this->args[i] == string("aste")) {
+            if (this->args[i] == string("ac-ste")) {
                 this->method = ArgParse::AUTOCROP;
                 this->submethod = ArgParse::AUTOCROP_STE;
                 continue;
             }
-            if (this->args[i] == string("afan")) {
+            if (this->args[i] == string("ac-fan")) {
                 this->method = ArgParse::AUTOCROP;
                 this->submethod = ArgParse::AUTOCROP_FAN;
                 continue;
             }
-            if (this->args[i] == string("a360")) {
+            if (this->args[i] == string("ac-360")) {
                 this->method = ArgParse::AUTOCROP;
                 this->submethod = ArgParse::AUTOCROP_360;
                 continue;
             }
-            if ((this->args[i] == string("gC3D")) || (this->args[i] == string("g"))) {
+            if (this->args[i] == string("stg-c3d")){
                 this->method = ArgParse::GLIMPSES;
                 this->submethod = ArgParse::GLIMPSES_C3D;
                 continue;
             }
-            if (this->args[i] == string("gitt")) {
+            if (this->args[i] == string("stg-itt")) {
                 this->method = ArgParse::GLIMPSES;
                 this->submethod = ArgParse::GLIMPSES_ITT;
                 continue;
             }
-            if (this->args[i] == string("gste")) {
+            if (this->args[i] == string("stg-ste")) {
                 this->method = ArgParse::GLIMPSES;
                 this->submethod = ArgParse::GLIMPSES_STE;
                 continue;
             }
-            if (this->args[i] == string("gmar")) {
+            if (this->args[i] == string("stg-mar")) {
                 this->method = ArgParse::GLIMPSES;
                 this->submethod = ArgParse::GLIMPSES_MAR;
                 continue;
             }
-            if (this->args[i] == string("d2D")) {
+            if (this->args[i] == string("aid-shot")) {
+                this->method = ArgParse::AID;
+                this->submethod = ArgParse::AID_SHOT;
+                continue;
+            }
+            if (this->args[i] == string("aid-cont")) {
+                this->method = ArgParse::AID;
+                this->submethod = ArgParse::AID_CONT;
+                continue;
+            }
+            if (this->args[i] == string("ds-2D")) {
                 this->method = ArgParse::DATASET;
                 this->submethod = ArgParse::DATASET_2D;
                 continue;
             }
-            if (this->args[i] == string("d3D")) {
+            if (this->args[i] == string("ds-3D")) {
                 this->method = ArgParse::DATASET;
                 this->submethod = ArgParse::DATASET_3D;
                 continue;

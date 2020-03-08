@@ -12,6 +12,7 @@ set( VLFEAT_INCLUDE_DIRS "external/vlfeat" )
 include_directories( ${OpenCV_INCLUDE_DIRS} ${VLFEAT_INCLUDE_DIRS} ) 
 
 add_executable( auto360cam "src/main.cpp"
+"src/aid.cpp"
 "src/argparse.cpp"
 "src/autocrop.cpp"
 "src/c3d.cpp"
@@ -26,6 +27,7 @@ add_executable( auto360cam "src/main.cpp"
 "external/crop/AutocropStentiford.cpp"
 "external/crop/AutocropSuh.cpp"
 "external/crop/CompositionModel.cpp"
+"external/saliency/MBS.cpp"
 "external/saliency/SalMapItti.cpp"
 "external/saliency/SalMapMargolin.cpp" 
 "external/saliency/SalMapStentiford.cpp" )

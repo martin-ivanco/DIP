@@ -40,6 +40,10 @@ public:
     static const int GLIMPSES_STE = 2;
     static const int GLIMPSES_MAR = 3;
 
+    static const int AID = 2;
+    static const int AID_SHOT = 0;
+    static const int AID_CONT = 1;
+
     static const int DATASET = 2;
     static const int DATASET_2D = 0;
     static const int DATASET_3D = 1;
