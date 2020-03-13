@@ -3,6 +3,7 @@
 #include <string>
 #include <tuple>
 
+#include "aid.hpp"
 #include "argparse.hpp"
 #include "autocrop.hpp"
 #include "c3d.hpp"
@@ -93,6 +94,19 @@ bool autocam(Glimpses &glimpses, ArgParse &arg, Trajectory &trajectory, Logger &
     return true;
 }
 
+bool aid(VideoInfo input, ArgParse &arg, Trajectory &trajectory, Logger &log) {
+    log.info("Using automatic importance detection method.");
+
+    // Evaluating trajectory using chosen method and smoothing it if requested
+    AID aid(log);
+    if (! aid.findTrajectory(trajectory, input, arg.submethod == ArgParse::AID_CONT))
+        return false;
+    if (arg.smooth)
+        trajectory.smooth(Glimpses::SPLIT_LENGTH * input.fps);
+
+    return true;
+}
+
 int main(int argc, char **argv) {
     // Setting up logger and parsing arguments
     Logger log(true);
@@ -128,6 +142,12 @@ int main(int argc, char **argv) {
         if (arg.method == ArgParse::GLIMPSES) {
             Glimpses glimpses(input, renderer, log);
             if (! autocam(glimpses, arg, trajectory, log))
+                return 2;
+        }
+
+        // Using automatic importance detection
+        if (arg.method == ArgParse::AID) {
+            if (! aid(input, arg, trajectory, log))
                 return 2;
         }
 

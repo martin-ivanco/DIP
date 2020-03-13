@@ -23,8 +23,10 @@ private:
     static constexpr double MIN_POINT_QUALITY = 0.01;
     static constexpr double MIN_POINT_DISTANCE = 10;
     static const int MBS_SIZE = 300;
+    static const string FACE_DETECTOR_PATH;
 
     Logger *log;
+    LandmarkDetector::FaceDetectorMTCNN face_detector;
 
     vector<cv::Point2f> getImportantPoints(cv::Mat &frame);
     cv::Mat getSaliencyMap(cv::Mat &frame, bool compact = false);
@@ -34,7 +36,7 @@ private:
     cv::Mat getFaceDetection(cv::Mat &frame, bool compact = false);
     bool checkNewShot(vector<cv::Point2f> &prev_points, vector<cv::Point2f> &curr_points, cv::Size frame_size);
     tPoint getCoords(cv::Mat &saliency_map, cv::Mat &optical_flow, cv::Mat &face_detection);
-    void setValToArea(cv::Mat &mat, cv::Point2f &point, float value, int radius = 5);
+    cv::Rect2f getAreaRect(cv::Point2f &point, cv::Mat &mat, float radius = 5);
 
 public:
     AID(Logger &log);

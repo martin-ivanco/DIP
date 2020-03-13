@@ -2,8 +2,12 @@
 
 using namespace std;
 
+const string AID::FACE_DETECTOR_PATH =
+    "external/openface/lib/local/LandmarkDetector/model/mtcnn_detector/MTCNN_detector.txt";
+
 AID::AID(Logger &log) {
     this->log = &log;
+    this->face_detector = LandmarkDetector::FaceDetectorMTCNN(AID::FACE_DETECTOR_PATH);
 }
 
 bool AID::findTrajectory(Trajectory &trajectory, VideoInfo input, bool continuous) {
@@ -139,7 +143,9 @@ cv::Mat AID::getOpticalFlow(cv::Mat &prev_frame, cv::Mat &curr_frame,
         if (i < prev_points.size()) {
             cv::Point2f diff = prev_points[i] - curr_points[i];
             float dist = cv::sqrt(diff.x * diff.x + diff.y * diff.y);
-            this->setValToArea(feature, curr_points[i], dist);
+            // TODO maybe smooth falloff
+            cv::rectangle(feature, this->getAreaRect(curr_points[i], feature), cv::Scalar(dist),
+                          cv::FILLED);
         }
 
         // Append the point to good ones
@@ -161,13 +167,35 @@ cv::Mat AID::getOpticalFlow(cv::Mat &prev_frame, cv::Mat &curr_frame,
 }
 
 cv::Mat AID::getFaceDetection(cv::Mat &frame, bool compact) {
-    LandmarkDetector::FaceModelParameters det_parameters;
-    LandmarkDetector::CLNF face_model(det_parameters.model_location);
-    return cv::Mat(); // TODO
+    // Detect faces
+    vector<cv::Rect2f> faces;
+    vector<float> confidences;
+    LandmarkDetector::DetectFacesMTCNN(faces, frame, this->face_detector, confidences);
+
+    // Generate feature map
+    cv::Mat feature(frame.rows, frame.cols, CV_32FC1, cv::Scalar(0));
+    for(auto f : faces) // TODO maybe smooth falloff and confidence
+        cv::rectangle(feature, f, cv::Scalar(1), cv::FILLED); 
+
+    // Compact the feature if requested
+    if (compact) {
+        cv::Mat row_feature;
+        cv::reduce(feature, row_feature, 0, cv::REDUCE_SUM, CV_32FC1);
+        feature = row_feature;
+    }
+
+    // Return normalized feature
+    cv::Mat norm_feature;
+    cv::normalize(feature, norm_feature, 1, 0, cv::NORM_MINMAX, CV_32FC1);
+    return norm_feature;
 }
 
 bool AID::checkNewShot(vector<cv::Point2f> &prev_points, vector<cv::Point2f> &curr_points,
                        cv::Size frame_size) {
+    // If it's the first frame of an already new shot, prev_points will be empty
+    if (prev_points.empty())
+        return false;
+
     // If we lost more than quarter of the points, it's definitely a new shot
     if (curr_points.size() * 4 < prev_points.size() * 3)
         return true;
@@ -190,14 +218,10 @@ tPoint AID::getCoords(cv::Mat &saliency_map, cv::Mat &optical_flow, cv::Mat &fac
     return tPoint(0, 0, 0); // TODO
 }
 
-void AID::setValToArea(cv::Mat &mat, cv::Point2f &point, float value, int radius) {
-    // TODO maybe update to smooth falloff
-    int xMin = point.x - radius < 0 ? 0 : point.x - radius;
-    int xMax = point.x + radius > mat.cols - 1 ? mat.cols - 1 : point.x + radius;
-    int yMin = point.y - radius < 0 ? 0 : point.y - radius;
-    int yMax = point.y + radius > mat.rows - 1 ? mat.rows - 1 : point.y + radius;
-    for (int i = yMin; i <= yMax; i++) {
-        for (int j = xMin; j <= xMax; j++)
-            mat.at<float>(i, j) = value;
-    }
+cv::Rect2f AID::getAreaRect(cv::Point2f &point, cv::Mat &mat, float radius) {
+    float xMin = point.x - radius < 0 ? 0 : point.x - radius;
+    float xMax = point.x + radius > mat.cols - 1 ? mat.cols - 1 : point.x + radius;
+    float yMin = point.y - radius < 0 ? 0 : point.y - radius;
+    float yMax = point.y + radius > mat.rows - 1 ? mat.rows - 1 : point.y + radius;
+    return cv::Rect2f(xMin, yMin, xMax - xMin, yMax - yMin);
 }
