@@ -161,6 +161,8 @@ cv::Mat AID::getOpticalFlow(cv::Mat &prev_frame, cv::Mat &curr_frame,
 }
 
 cv::Mat AID::getFaceDetection(cv::Mat &frame, bool compact) {
+    LandmarkDetector::FaceModelParameters det_parameters;
+    LandmarkDetector::CLNF face_model(det_parameters.model_location);
     return cv::Mat(); // TODO
 }
 

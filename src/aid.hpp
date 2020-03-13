@@ -11,6 +11,7 @@
 #include "trajectory.hpp"
 #include "videoinfo.hpp"
 #include "../external/saliency/MBS.hpp"
+#include "LandmarkCoreIncludes.h"
 
 using namespace std;
 
