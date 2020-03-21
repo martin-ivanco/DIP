@@ -11,11 +11,6 @@ AID::AID(Logger &log) {
 }
 
 bool AID::findTrajectory(Trajectory &trajectory, VideoInfo input, bool continuous) {
-    if (continuous) {
-        this->log->error("Continuous automatic importance detection not yet implemented.");
-        return false;
-    }
-
     // Opening input video
     cv::VideoCapture video = cv::VideoCapture(input.path);
     if (! video.isOpened()) {
@@ -43,8 +38,10 @@ bool AID::findTrajectory(Trajectory &trajectory, VideoInfo input, bool continuou
         }
 
         // Calculate optical flow first to check if this is a new shot
-        temp_flow = this->getOpticalFlow(prev_frame, curr_frame, prev_points, curr_points, true);
-        if (this->checkNewShot(prev_points, curr_points, input.size)) {
+        temp_flow = this->getOpticalFlow(prev_frame, curr_frame, prev_points, curr_points,
+                                         ! continuous);
+        // However, only check it if continuous is not set
+        if ((! continuous) && (this->checkNewShot(prev_points, curr_points, input.size))) {
             this->log->debug("Detected new shot.");
             // If it is, count coordinates and add them to trajectory
             tPoint coords = this->getCoords(saliency_map, optical_flow, face_detection);
@@ -62,9 +59,19 @@ bool AID::findTrajectory(Trajectory &trajectory, VideoInfo input, bool continuou
         }
 
         // Calculate saliency map and face detection
-        saliency_map.push_back(this->getSaliencyMap(curr_frame, true));
+        saliency_map.push_back(this->getSaliencyMap(curr_frame, ! continuous));
         optical_flow.push_back(temp_flow);
-        face_detection.push_back(this->getFaceDetection(curr_frame, true));
+        face_detection.push_back(this->getFaceDetection(curr_frame, ! continuous));
+
+        // If continuous is set features are not compacted and we can count coordinates every frame
+        if (continuous) {
+            trajectory[i] = this->getCoords(saliency_map, optical_flow, face_detection);
+
+            // Clear feature maps and other stuff
+            saliency_map = cv::Mat();
+            optical_flow = cv::Mat();
+            face_detection = cv::Mat();
+        }
         
         // Move current data to previous and get new frame
         prev_frame = curr_frame.clone();
@@ -73,9 +80,11 @@ bool AID::findTrajectory(Trajectory &trajectory, VideoInfo input, bool continuou
     }
 
     // Count coordinates for the last shot and add them to trajectory
-    tPoint coords = this->getCoords(saliency_map, optical_flow, face_detection);
-    for (int j = shot_start_index; j < trajectory.length(); j++)
-        trajectory[j] = coords;
+    if (! continuous) {
+        tPoint coords = this->getCoords(saliency_map, optical_flow, face_detection);
+        for (int j = shot_start_index; j < trajectory.length(); j++)
+            trajectory[j] = coords;
+    }
 
     return true;
 }
