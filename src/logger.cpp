@@ -17,28 +17,39 @@ void Logger::setVerbose(bool value) {
 }
 
 void Logger::debug(string message) {
-    if (this->verbose)
-        cerr << message << endl;
-    if (this->file.is_open())
-        this->file << getTime() << " - DEBUG: " << message << endl;
+    #ifndef _OPENMP
+        if (this->verbose)
+            cerr << message << endl;
+        if (this->file.is_open())
+            this->file << getTime() << " - DEBUG: " << message << endl;
+    #endif
 }
 
 void Logger::info(string message) {
-    cout << message << endl;
-    if (this->file.is_open())
-        this->file << getTime() << " - INFO: " << message << endl;
+    #pragma omp critical (log)
+    {
+        cout << message << endl;
+        if (this->file.is_open())
+            this->file << getTime() << " - INFO: " << message << endl;
+    }
 }
 
 void Logger::warning(string message) {
-    cerr << "WARNING: " << message << endl;
-    if (this->file.is_open())
-        this->file << getTime() << " - WARNING: " << message << endl;
+    #pragma omp critical (log)
+    {
+        cerr << "WARNING: " << message << endl;
+        if (this->file.is_open())
+            this->file << getTime() << " - WARNING: " << message << endl;
+    }
 }
 
 void Logger::error(string message) {
-    cerr << "ERROR: " << message << endl;
-    if (this->file.is_open())
-        this->file << getTime() << " - ERROR: " << message << endl;
+    #pragma omp critical (log)
+    {
+        cerr << "ERROR: " << message << endl;
+        if (this->file.is_open())
+            this->file << getTime() << " - ERROR: " << message << endl;
+    }
 }
 
 string Logger::getTime(bool date) {

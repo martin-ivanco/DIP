@@ -1,6 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "aid.hpp"
 #include "argparse.hpp"
@@ -24,10 +27,6 @@ bool autocrop(VideoInfo input, ArgParse &arg, Trajectory &trajectory, Logger &lo
     if (arg.submethod == ArgParse::AUTOCROP_FAN) method = AutoCrop::FANG;
     if (arg.submethod == ArgParse::AUTOCROP_STE) method = AutoCrop::STENTIFORD;
     if (arg.submethod == ArgParse::AUTOCROP_SUH) method = AutoCrop::SUH;
-    if (arg.submethod == ArgParse::AUTOCROP_360) {
-        log.error("Sorry, the 360 saliency method is not yet supported.");
-        return false;
-    }
 
     // Evaluating trajectory using chosen method and smoothing it if requested
     AutoCrop autoCrop(log);
@@ -121,33 +120,54 @@ int main(int argc, char **argv) {
     // Creating output folder and renderer
     fs::path outputFolder = fs::path("data") / fs::path("output");
     fs::create_directories(outputFolder);
+
+    // Parallel section
+    int exit_flag = 0;
+    #pragma omp parallel firstprivate(input_paths, outputFolder)
+    {
+    // Each thread gets its own renderer
     Renderer renderer(log);
+    bool error_encountered = false;
     
     // Processing input videos
-    for (auto path : input_paths) {
-        log.info("Processing input path '" + path + "'.");
-        VideoInfo input(path);
-        fs::path outputPath(outputFolder / fs::path(path).filename());
+    #pragma omp for schedule(guided) nowait
+    for (int i = 0; i < input_paths.size(); i++) {
+        // Check error
+        #pragma omp atomic read
+        error_encountered = exit_flag;
+        if (error_encountered)
+            continue;
+        
+        // Prepare input video and trajectory
+        log.info("Processing input path '" + input_paths[i] + "'.");
+        VideoInfo input(input_paths[i]);
+        fs::path outputPath(outputFolder / fs::path(input_paths[i]).filename());
         VideoInfo output(outputPath.string(), 0, static_cast<double>(input.fps), input.size);
         Trajectory trajectory(log, input.length);
 
         // Using standard automatic cropping
         if (arg.method == ArgParse::AUTOCROP) {
-            if (! autocrop(input, arg, trajectory, log))
-                return 2;
+            if (! autocrop(input, arg, trajectory, log)) {
+                #pragma omp atomic write
+                exit_flag = 2;
+            }
         }
 
         // Using spatio-temporal glimpses
         if (arg.method == ArgParse::GLIMPSES) {
             Glimpses glimpses(input, renderer, log);
-            if (! autocam(glimpses, arg, trajectory, log))
-                return 2;
+            if (! autocam(glimpses, arg, trajectory, log)) {
+                #pragma omp atomic write
+                exit_flag = 2;
+            }
         }
 
         // Using automatic importance detection
         if (arg.method == ArgParse::AID) {
-            if (! aid(input, arg, trajectory, log))
-                return 2;
+            if (! aid(input, arg, trajectory, log)) {
+                #pragma omp atomic write
+                exit_flag = 2;
+            }
         }
 
         // Preparing dataset files - generating glimpses and extracting C3D features
@@ -162,8 +182,16 @@ int main(int argc, char **argv) {
             continue;
         }
 
+        // Check error
+        #pragma omp atomic read
+        error_encountered = exit_flag;
+        if (error_encountered)
+            continue;
+        
+        // Render output
         renderer.renderTrajectory(input, trajectory, output);
     }
+    }
 
-    return 0;
+    return exit_flag;
 }

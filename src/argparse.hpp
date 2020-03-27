@@ -7,6 +7,9 @@
 #include <string>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "logger.hpp"
 
@@ -32,7 +35,6 @@ public:
     static const int AUTOCROP_SUH = 0;
     static const int AUTOCROP_STE = 1;
     static const int AUTOCROP_FAN = 2;
-    static const int AUTOCROP_360 = 3;
     
     static const int GLIMPSES = 1;
     static const int GLIMPSES_C3D = 0;

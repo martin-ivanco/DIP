@@ -5,7 +5,7 @@ namespace fs = std::filesystem;
 
 const string ArgParse::INPUT_FOLDER = "data/input";
 const string ArgParse::HELP_MESSAGE = 
-    "usage: ./run.sh run [-h] [-v] -m <method> -c <category> [-s]\n"
+    "usage: ./run.sh run [-h] [-v] -m <method> -c <category> [-s] [-t <number>]\n"
     "\n"
     "\e[1mAutomatic Spherical Video Cropping Algorithms\e[0m\n"
     "\n"
@@ -20,9 +20,6 @@ const string ArgParse::HELP_MESSAGE =
     "      ac-suh       utilizes method by Suh et. al. implemented by Ambrož\n"
     "      ac-ste       utilizes method by Stentiford implemented by Ambrož\n"
     "      ac-fan       utilizes method by Fang et. al. implemented by Ambrož\n"
-    // "      ac-360       utilizes spherical saliency mapping technique by\n"
-    // "                   Zhang et. al. and the cropping rectangle is found using brute\n"
-    // "                   force\n"
     "    stg-xxx        methods based on Pano2Vid by Su et. al. using\n"
     "                   spatio-temporal glimpses\n"
     "      stg-c3d      original method using classification based on C3D features\n"
@@ -46,7 +43,10 @@ const string ArgParse::HELP_MESSAGE =
     "                   available categories are: hiking, mountain_climbing,\n"
     "                   parade, soccer\n"
     "  -s, --smooth     smooth the acquired trajectory before rendering video -\n"
-    "                   useful for automatic cropping methods and aid-cont method\n";
+    "                   useful for automatic cropping methods and aid-cont method\n"
+    "  -t, --threads    if OpenMP is supported on current machine, this argument\n"
+    "                   specifies, how many threads should be used to process input\n"
+    "                   in parallel\n";
 
 ArgParse::ArgParse(int argc, char **argv, Logger &log) {
     this->log = &log;
@@ -89,11 +89,6 @@ bool ArgParse::parse() {
             if (this->args[i] == string("ac-fan")) {
                 this->method = ArgParse::AUTOCROP;
                 this->submethod = ArgParse::AUTOCROP_FAN;
-                continue;
-            }
-            if (this->args[i] == string("ac-360")) {
-                this->method = ArgParse::AUTOCROP;
-                this->submethod = ArgParse::AUTOCROP_360;
                 continue;
             }
             if (this->args[i] == string("stg-c3d")){
@@ -170,6 +165,17 @@ bool ArgParse::parse() {
         // Smooth
         if ((this->args[i] == string("-s")) || (this->args[i] == string("--smooth"))) {
             this->smooth = true;
+            continue;
+        }
+
+        // OpenMP threads
+        if ((this->args[i] == string("-t")) || (this->args[i] == string("--threads"))) {
+            if (! this->checkValue(i))
+                return false;
+            i += 1;
+            #ifdef _OPENMP
+                omp_set_num_threads(stoi(this->args[i]));
+            #endif
             continue;
         }
 

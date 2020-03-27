@@ -6,6 +6,12 @@ set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 find_package( OpenCV REQUIRED )
+find_package( OpenMP )
+if ( OpenMP_CXX_FOUND )
+    set( OpenMP_LIBS OpenMP::OpenMP_CXX )
+else ()
+    set( OpenMP_LIBS "")
+endif ()
 set( BLA_VENDOR OpenBLAS )
 find_package( BLAS )
 if ( NOT BLAS_FOUND ) # dirty fix for OpenBLAS installation via Homebrew on macOS
@@ -50,4 +56,4 @@ external/vlfeat/vl/slic.c )
 add_subdirectory( external/openface/lib/3rdParty/dlib/dlib )
 add_subdirectory( external/openface/lib/local/LandmarkDetector )
 
-target_link_libraries( auto360cam ${OpenCV_LIBS} ${BLAS_LIBS} vlfeats dlib LandmarkDetector ) # pthread stdc++fs - for older gcc
+target_link_libraries( auto360cam ${OpenCV_LIBS} ${OpenMP_LIBS} ${BLAS_LIBS} vlfeats dlib LandmarkDetector ) # pthread stdc++fs - for older gcc
