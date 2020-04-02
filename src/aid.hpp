@@ -7,7 +7,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/video.hpp>
-#include <opencv2/plot.hpp>
 
 #include "logger.hpp"
 #include "trajectory.hpp"

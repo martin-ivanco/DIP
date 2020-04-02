@@ -136,8 +136,7 @@ bool C3D::evaluate(ScoreSpace &space, int category, int layer) {
     vector<Feature> pos_features;
     this->loadFeaturesFolder(
         fs::path(C3D::TRAIN_FEATURES_DIR) / fs::path(C3D::POS_FEATURES_DIR)
-        / fs::path(C3D::CATEGORIES[category] / fs::path("train")), pos_features,
-        C3D::POS_TRAIN_FEATURE_COUNT);
+        / fs::path(C3D::CATEGORIES[category]), pos_features, C3D::POS_TRAIN_FEATURE_COUNT);
 
     // Prepare training data
     this->log->debug("Preparing data for training logistic regressor.");

@@ -72,9 +72,6 @@ bool autocam(Glimpses &glimpses, ArgParse &arg, Trajectory &trajectory, Logger &
         return false;
     if (! space.findTrajectory(trajectory, glimpses.splitLength() * 2, Glimpses::ANGLE_EPS * 2))
         return false;
-    // for development only
-    space.save(fs::path("data") / fs::path("output") / fs::path("coarse_space.txt"));
-    trajectory.save(fs::path("data") / fs::path("output") / fs::path("coarse_trajectory.txt"));
 
     // Dense search
     glimpses.clear();
@@ -85,9 +82,6 @@ bool autocam(Glimpses &glimpses, ArgParse &arg, Trajectory &trajectory, Logger &
         return false;
     if (! space.findTrajectory(trajectory, glimpses.splitLength(), Glimpses::ANGLE_EPS))
         return false;
-    // for development only
-    space.save(fs::path("data") / fs::path("output") / fs::path("dense_space.txt"));
-    trajectory.save(fs::path("data") / fs::path("output") / fs::path("dense_trajectory.txt"));
 
     return true;
 }

@@ -141,19 +141,19 @@ bool ArgParse::parse() {
             if (! this->checkValue(i))
                 return false;
             i += 1;
-            if (this->args[i] == string("h")) {
+            if ((this->args[i] == string("h")) || (this->args[i] == string("hiking"))) {
                 this->category = ArgParse::HIKING;
                 continue;
             }
-            if (this->args[i] == string("mc")) {
+            if ((this->args[i] == string("mc")) || (this->args[i] == string("mountain_climbing"))) {
                 this->category = ArgParse::MOUNTAIN_CLIMBING;
                 continue;
             }
-            if (this->args[i] == string("p")) {
+            if ((this->args[i] == string("p")) || (this->args[i] == string("parade"))) {
                 this->category = ArgParse::PARADE;
                 continue;
             }
-            if (this->args[i] == string("s")) {
+            if ((this->args[i] == string("s")) || (this->args[i] == string("soccer"))) {
                 this->category = ArgParse::SOCCER;
                 continue;
             }
