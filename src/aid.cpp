@@ -152,7 +152,6 @@ cv::Mat AID::getOpticalFlow(cv::Mat &prev_frame, cv::Mat &curr_frame,
         if (i < prev_points.size()) {
             cv::Point2f diff = prev_points[i] - curr_points[i];
             float dist = cv::sqrt(diff.x * diff.x + diff.y * diff.y);
-            // TODO maybe smooth falloff
             cv::rectangle(feature, this->getAreaRect(curr_points[i], feature), cv::Scalar(dist),
                           cv::FILLED);
         }
@@ -176,8 +175,8 @@ cv::Mat AID::getFaceDetection(cv::Mat &frame, bool compact) {
 
     // Generate feature map
     cv::Mat feature(frame.rows, frame.cols, CV_32FC1, cv::Scalar(0));
-    for(auto f : faces) // TODO maybe smooth falloff and confidence
-        cv::rectangle(feature, f, cv::Scalar(1), cv::FILLED); 
+    for(int i = 0; i < faces.size(); i++)
+        cv::rectangle(feature, faces[i], cv::Scalar(confidences[i]), cv::FILLED); 
 
     // Return normalized feature, compacted if requested
     return this->normalize(feature, compact);
@@ -225,7 +224,6 @@ tPoint AID::getCoords(cv::Mat &saliency_map, cv::Mat &optical_flow, cv::Mat &fac
         return tPoint(0, 0, AID::AOV);
 
     // Select clearest peak and compute corresponding coordinates
-    // TODO Maybe weights
     double width = sm_feature.cols;
     if ((get<1>(sm_peak) > get<1>(of_peak)) && (get<1>(sm_peak) > get<1>(fd_peak)))
         return tPoint(0, get<0>(sm_peak) / width * 360 - 180, AID::AOV);

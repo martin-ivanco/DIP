@@ -253,7 +253,7 @@ void C3D::loadFeaturesFolder(string folderPath, vector<Feature> &features, int l
     for (auto file : fs::directory_iterator(folderPath)) {
         fs::path filepath = file.path();
         if ((filepath.extension().string() != string(".c3d"))
-                || (filepath.stem().string() == this->glimpses->videoName()))
+                || (this->glimpses->videoName().find(filepath.stem().string()) != string::npos))
             continue;
 
         this->loadFeatures(file.path(), features);
