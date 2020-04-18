@@ -21,8 +21,8 @@ bool Glimpses::renderCoarse(bool skip_existing) {
         this->log->warning("Skipping existing glimpses.");
 
     // Generating splits
-    this->splits = this->renderer->splitVideo(this->video, this->folder, Glimpses::SPLIT_LENGTH * 2,
-                                              skip_existing);
+    this->splits = this->renderer->splitVideo(this->video, this->folder,
+                                              Glimpses::SPLIT_LENGTH * 2, skip_existing);
 
     // Generating coarsely sampled glimpses - looping over every second phi and lambda and for each
     // combination rendering that view from all splits

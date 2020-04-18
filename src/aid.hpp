@@ -34,9 +34,7 @@ private:
 
     vector<cv::Point2f> getImportantPoints(cv::Mat &frame);
     cv::Mat getSaliencyMap(cv::Mat &frame, bool compact = false);
-    cv::Mat getOpticalFlow(cv::Mat &prev_frame, cv::Mat &curr_frame,
-                           vector<cv::Point2f> &prev_points, vector<cv::Point2f> &curr_points,
-                           bool compact = false);
+    cv::Mat getOpticalFlow(cv::Mat &prev_frame, cv::Mat &curr_frame, vector<cv::Point2f> &prev_points, vector<cv::Point2f> &curr_points, bool compact = false);
     cv::Mat getFaceDetection(cv::Mat &frame, bool compact = false);
     bool checkNewShot(vector<cv::Point2f> &prev_points, vector<cv::Point2f> &curr_points, cv::Size frame_size);
     tPoint getCoords(cv::Mat &saliency_map, cv::Mat &optical_flow, cv::Mat &face_detection);

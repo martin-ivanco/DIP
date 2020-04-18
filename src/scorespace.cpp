@@ -88,8 +88,9 @@ bool ScoreSpace::findTrajectory(Trajectory &trajectory, int splitLength, double 
     // Backtracking - find the path that leads to the best score
     Trace pTrace = bestEnd;
     for (int t = this->space.size() - 2; t >= 0; t--) {
-        trajectory[t * splitLength + splitLength / 2] = tPoint(
-            Glimpses::PHIS[pTrace.phi], Glimpses::LAMBDAS[pTrace.lambda], Glimpses::AOVS[pTrace.aov]);
+        trajectory[t * splitLength + splitLength / 2] = tPoint(Glimpses::PHIS[pTrace.phi],
+                                                               Glimpses::LAMBDAS[pTrace.lambda],
+                                                               Glimpses::AOVS[pTrace.aov]);
         pTrace = this->accumulator[t][pTrace.phi][pTrace.lambda][pTrace.aov];
     }
 

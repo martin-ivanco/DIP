@@ -17,12 +17,13 @@ void Logger::setVerbose(bool value) {
 }
 
 void Logger::debug(string message) {
-    #ifndef _OPENMP
+    #pragma omp critical (log)
+    {
         if (this->verbose)
             cerr << message << endl;
         if (this->file.is_open())
             this->file << getTime() << " - DEBUG: " << message << endl;
-    #endif
+    }
 }
 
 void Logger::info(string message) {

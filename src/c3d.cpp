@@ -58,16 +58,16 @@ void C3D::prepare(bool use_splits) {
 
         // Preparing directory for the glimpses features
         fs::path glimpsePath = this->glimpses->get(i, use_splits).path;
-        fs::path glimpseFeaturesDirectory = videoPath / fs::path(this->glimpses->get(i, use_splits).name);
+        fs::path glimpseFeaturesDirectory = videoPath / this->glimpses->get(i, use_splits).name;
         fs::create_directories(glimpseFeaturesDirectory);
 
         // Adding the glimpse to the lists
         for (int j = 0; j < glimpseSegmentCount; j++) {
             inputList << glimpsePath.string() << " " << to_string(j * C3D::SEGMENT_LENGTH)
-                       << " 0" << endl;
+                      << " 0" << endl;
             sprintf(prefixBuffer, "%03d", j * C3D::SEGMENT_LENGTH);
             outputPrefix << (glimpseFeaturesDirectory / fs::path(prefixBuffer)).string()
-                          << endl;
+                         << endl;
         }
         this->segmentCount += glimpseSegmentCount;
     }
