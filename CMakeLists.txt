@@ -12,12 +12,14 @@ if ( OpenMP_CXX_FOUND )
 else ()
     set( OpenMP_LIBS "")
 endif ()
-set( BLA_VENDOR OpenBLAS )
-find_package( BLAS )
-if ( NOT BLAS_FOUND ) # dirty fix for OpenBLAS installation via Homebrew on macOS
-    set( BLAS_INCLUDE_DIRS "/usr/local/opt/openblas/include" )
-    set( BLAS_LIBS "/usr/local/opt/openblas/lib/libopenblas.dylib" )
+# set your OpenBLAS path here
+# set( BLAS_INCLUDE_DIRS "/usr/local/opt/openblas/include" )
+# set( BLAS_LIBS "/usr/local/opt/openblas/lib/libopenblas.dylib" )
+if ( NOT BLAS_LIBS ) 
+    message( FATAL_ERROR "ERROR: Please set your OpenBLAS path in CMakeLists.txt." )
 endif ()
+set( OpenBLAS_INCLUDE_DIR ${BLAS_INCLUDE_DIRS} )
+set( OpenBLAS_LIB ${BLAS_LIBS} )
 set( VLFEAT_INCLUDE_DIRS "external/vlfeat" )
 set( DLIB_INCLUDE_DIRS "external/openface/lib/3rdParty/dlib" )
 set( LANDMARK_INCLUDE_DIRS "external/openface/lib/local/LandmarkDetector/include" )
@@ -55,7 +57,7 @@ add_executable(
 )
 
 add_library(
-    vlfeats
+    vlfeat
     external/vlfeat/vl/host.c
     external/vlfeat/vl/random.c
     external/vlfeat/vl/generic.c
@@ -69,7 +71,7 @@ target_link_libraries(
     ${OpenCV_LIBS}
     ${OpenMP_LIBS}
     ${BLAS_LIBS}
-    vlfeats
+    vlfeat
     dlib
     LandmarkDetector
-) # pthread stdc++fs - add these for older gcc
+) # pthread stdc++fs gfortran - add these for older gcc
