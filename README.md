@@ -1,6 +1,6 @@
 # Algorithms for Automatic Spherical Video Cropping
 *Author:* Martin Ivanco
-*E-mail:* xivanc03@stud.fit.vutbr.cz
+*E-mail:* xivanc03@vutbr.cz
 
 Diploma thesis project at Brno University of Technology. The goal was to research and implement algorithms for automatic spherical video cropping. The application implements 3 such algorithms with several variations. The input should be a spherical video in the standard equirectangular projection. The output is a 2D video with stereographic projection that is a certain view from the input video. The algorithms try to choose that view in a way that the output would contain the most important content from the input.
 
